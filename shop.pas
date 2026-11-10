@@ -1,51 +1,34 @@
-program ShopCalc;
-{ Расчет стоимости покупки в магазине (Turbo Pascal 7) }
-uses Crt;
-
+program Magazin;
 var
-  Name: string;           { название товара }
-  Price: real;            { цена одной единицы, леев }
-  Qty: integer;           { количество единиц }
-  Total: real;            { первоначальная стоимость }
-  Discount: real;         { размер скидки, леев }
-  Percent: real;          { процент скидки }
-  ToPay: real;            { итог к оплате }
+  nazv: string;
+  cena, summa, skidka, itog: real;
+  kol: integer;
 
-{ Процедура 1: вычисляет общую стоимость }
-procedure CalcTotal(Price: real; Qty: integer; var Total: real);
+procedure Stoimost;
 begin
-  Total := Price * Qty;
+  summa := cena * kol;
 end;
 
-{ Процедура 2: определяет скидку }
-procedure CalcDiscount(Total: real; var Percent, Discount: real);
+procedure Skidka_;
 begin
-  if Total > 1000 then
-    Percent := 10
-  else if Total >= 500 then
-    Percent := 5          { 500..1000 лей - по условию % не задан, взято 5 }
-  else
-    Percent := 0;
-  Discount := Total * Percent / 100;
+  if summa > 1000 then skidka := summa * 0.1
+  else if summa >= 500 then skidka := summa * 0.05
+  else skidka := 0;
 end;
 
 begin
-  ClrScr;
-  Write('Nazvanie tovara: ');
-  ReadLn(Name);
-  Write('Cena odnogo tovara (lei): ');
-  ReadLn(Price);
-  Write('Kolichestvo edinic: ');
-  ReadLn(Qty);
-
-  CalcTotal(Price, Qty, Total);
-  CalcDiscount(Total, Percent, Discount);
-  ToPay := Total - Discount;
-
-  WriteLn;
-  WriteLn('Tovar               : ', Name);
-  WriteLn('Pervonachalnaya sum.: ', Total:0:2, ' lei');
-  WriteLn('Skidka (', Percent:0:0, '%)       : ', Discount:0:2, ' lei');
-  WriteLn('Itogo k oplate      : ', ToPay:0:2, ' lei');
-  ReadLn;
+  write('Nazvanie tovara: ');
+  readln(nazv);
+  write('Cena: ');
+  readln(cena);
+  write('Kolichestvo: ');
+  readln(kol);
+  Stoimost;
+  Skidka_;
+  itog := summa - skidka;
+  writeln('Tovar: ', nazv);
+  writeln('Stoimost: ', summa:0:2);
+  writeln('Skidka: ', skidka:0:2);
+  writeln('K oplate: ', itog:0:2);
+  readln;
 end.
