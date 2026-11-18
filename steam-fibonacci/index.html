@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>STEAM · Фибоначчи в природе (AR)</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;touch-action:none}
+  .ui{position:fixed;z-index:10}
+  #top{top:0;left:0;right:0;padding:10px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;background:linear-gradient(#000a,#0000)}
+  #top h1{font-size:15px;margin:0;font-weight:700}
+  .chip{border:1px solid #fff5;background:#0008;color:#fff;border-radius:18px;padding:7px 12px;font-size:13px;cursor:pointer}
+  #hint{top:46%;left:0;right:0;text-align:center;font-size:17px;padding:0 24px;text-shadow:0 1px 6px #000;pointer-events:none}
+  #hint small{display:block;opacity:.8;margin-top:6px;font-size:13px}
+  #bottom{left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c 35%)}
+  #info{background:#0b1230e6;border:1px solid #ffffff2a;border-radius:14px;padding:10px 14px;margin-bottom:8px;font-size:13.5px;line-height:1.4;max-height:34vh;overflow:auto}
+  #info h2{margin:0 0 4px;font-size:16px;cursor:pointer}
+  #info.min p{display:none}
+  #info.min h2{margin:0}
+  #info p{margin:0}
+  #tabs{display:flex;gap:8px}
+  .tab{flex:1;border:1px solid #fff4;background:#1a2447;color:#fff;border-radius:14px;padding:11px 4px;font-size:15px;font-weight:600}
+  .tab.on{background:#ffd54a;color:#1b1500;border-color:#ffd54a}
+  a-scene{position:fixed;inset:0}
+</style>
+<script src="lib/aframe.min.js"></script>
+<script src="lib/aframe-ar.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<div id="top" class="ui">
+  <h1>STEAM · Фибоначчи</h1>
+  <div style="display:flex;gap:6px">
+    <button class="chip" id="bLab">Подписи ✓</button>
+    <a class="chip" id="bMode" style="text-decoration:none;color:#fff"></a>
+  </div>
+</div>
+<div id="hint" class="ui">Наведи камеру на маркер на листе A4<small>Распечатай <a href="marker.html" style="color:#ffd54a">marker.html</a> · модель вращается, её можно крутить пальцем</small></div>
+<div id="bottom" class="ui">
+  <div id="info"></div>
+  <div id="tabs">
+    <button class="tab" data-i="0">🌻 Подсолнух</button>
+    <button class="tab" data-i="1">🌲 Шишка</button>
+    <button class="tab" data-i="2">🐚 Наутилус</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search), is3d = q.get('mode') === '3d';
+  var lights = '<a-entity light="type:ambient;color:#ffffff;intensity:0.85"></a-entity>' +
+               '<a-entity light="type:directional;color:#ffffff;intensity:0.9" position="1 3 2"></a-entity>';
+  var scene;
+  if (is3d) {
+    scene = '<a-scene embedded vr-mode-ui="enabled:false" renderer="alpha:true;antialias:true" background="color:#0e1a3a">' + lights +
+      '<a-entity camera position="0 0.45 1.45" rotation="-6 0 0"></a-entity>' +
+      '<a-entity position="0 -0.05 0" fib-app></a-entity></a-scene>';
+  } else {
+    scene = '<a-scene embedded vr-mode-ui="enabled:false" renderer="alpha:true;antialias:true;precision:medium" ' +
+      'arjs="sourceType:webcam;trackingMethod:best;debugUIEnabled:false;detectionMode:mono;cameraParametersUrl:data/camera_para.dat;maxDetectionRate:60">' + lights +
+      '<a-marker id="mk" type="pattern" url="data/patt.hiro" smooth="true" smoothCount="8" smoothTolerance="0.01" smoothThreshold="4"><a-entity fib-app></a-entity></a-marker>' +
+      '<a-entity camera></a-entity></a-scene>';
+  }
+  document.body.insertAdjacentHTML('afterbegin', scene);
+  var bm = document.getElementById('bMode');
+  bm.textContent = is3d ? '📷 AR' : '🧊 без камеры';
+  bm.href = is3d ? location.pathname : location.pathname + '?mode=3d';
+  var hint = document.getElementById('hint');
+  if (is3d) hint.style.display = 'none';
+  var mk = document.getElementById('mk');
+  if (mk) { mk.addEventListener('markerFound', function () { hint.style.display = 'none'; });
+            mk.addEventListener('markerLost', function () { hint.style.display = ''; }); }
+  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { window.FIB && window.FIB.show(+b.dataset.i); }); });
+  document.getElementById('bLab').addEventListener('click', function () {
+    var f = window.FIB; if (!f) return; f.setLabels(!f.labelsOn); this.textContent = 'Подписи ' + (f.labelsOn ? '✓' : '✗');
+  });
+  document.getElementById('info').addEventListener('click',function(){this.classList.toggle('min')});
+  var m = q.get('model'); if (m != null) { var t = setInterval(function () { if (window.FIB) { window.FIB.show(+m); clearInterval(t); } }, 100); }
+})();
+</script>
+</body>
+</html>
