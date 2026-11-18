@@ -11,7 +11,8 @@
   // Текстовая табличка (спрайт) — поддерживает кириллицу и всегда видна поверх модели
   function makeLabel(text, o) {
     o = o || {};
-    const fs = o.fs || 46, worldH = o.h || 0.05;
+    const LS = window.FIB_LABEL_SCALE || 1;
+    const fs = (o.fs || 46) * LS, worldH = o.h || 0.05;
     const lines = String(text).split('\n');
     const c = document.createElement('canvas');
     let ctx = c.getContext('2d');
@@ -19,25 +20,25 @@
     ctx.font = font;
     const tw = Math.max.apply(null, lines.map(l => ctx.measureText(l).width));
     const plain = o.bg === false;
-    const px = plain ? 10 : 26, py = plain ? 6 : 16, lh = fs * 1.25;
+    const px = (plain ? 10 : 26) * LS, py = (plain ? 6 : 16) * LS, lh = fs * 1.25;
     c.width = Math.ceil(tw + px * 2);
     c.height = Math.ceil(lh * lines.length + py * 2);
     ctx = c.getContext('2d');
     ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (!plain) {
-      const r = 22, w = c.width - 4, h = c.height - 4;
+      const r = 22 * LS, w = c.width - 4, h = c.height - 4;
       ctx.beginPath();
       ctx.moveTo(2 + r, 2); ctx.arcTo(2 + w, 2, 2 + w, 2 + h, r); ctx.arcTo(2 + w, 2 + h, 2, 2 + h, r);
       ctx.arcTo(2, 2 + h, 2, 2, r); ctx.arcTo(2, 2, 2 + w, 2, r); ctx.closePath();
       ctx.fillStyle = o.bg || 'rgba(8,16,36,0.82)'; ctx.fill();
-      ctx.lineWidth = 4; ctx.strokeStyle = o.border || '#ffd54a'; ctx.stroke();
+      ctx.lineWidth = 4 * LS; ctx.strokeStyle = o.border || '#ffd54a'; ctx.stroke();
     }
     ctx.fillStyle = o.color || '#ffffff';
     if (plain) { ctx.shadowColor = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 8; }
     lines.forEach((l, i) => ctx.fillText(l, c.width / 2, py + lh * (i + 0.5)));
     const tex = new THREE.CanvasTexture(c);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true }));
-    const k = worldH / lh;
+    const k = worldH * LS / lh;
     sp.scale.set(c.width * k, c.height * k, 1);
     sp.renderOrder = 1000;
     sp.userData.isLabel = true;
