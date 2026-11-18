@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STEAM · Фибоначчи на столе (iPhone)</title>
+<style>
+  body{margin:0;background:#0b1020;color:#fff;font-family:-apple-system,system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding:16px 16px 40px}
+  h1{font-size:21px;margin:6px 0 4px} .lead{opacity:.85;line-height:1.4;margin:0 0 16px;font-size:15px}
+  .card{background:#131c3d;border:1px solid #ffffff22;border-radius:18px;padding:12px;margin-bottom:16px}
+  .card a{display:block;position:relative;text-decoration:none;color:#fff}
+  .card img{width:100%;border-radius:12px;display:block;background:#0e1a3a}
+  .btn{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:#ffd54a;color:#1b1500;font-weight:700;border-radius:20px;padding:10px 18px;font-size:15px;white-space:nowrap}
+  .card h2{margin:12px 2px 4px;font-size:18px} .card p{margin:0 2px;font-size:14px;line-height:1.45;opacity:.92}
+  #warn{display:none;background:#5a2a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+  a.l{color:#ffd54a}
+</style>
+</head>
+<body>
+<h1>🪵 Фибоначчи на твоём столе</h1>
+<p class="lead">Нажми на картинку → «AR» → наведи камеру на стол, подожди секунду и модель встанет на столешницу. Её можно обойти кругом, двигать и увеличивать пальцами.</p>
+<div id="warn">Эта страница для iPhone/iPad в Safari. На других устройствах: <a class="l" href="table.html">режим «стол» (Android)</a> или <a class="l" href="index.html">режим с маркером</a>.</div>
+
+<div class="card"><a rel="ar" href="models/sunflower.usdz"><img src="thumbs/sunflower.jpg" alt="Подсолнух"><span class="btn">🌻 Показать на столе</span></a>
+<h2>Подсолнух</h2><p>Семена повёрнуты на золотой угол 137,5°. Спирали: <b style="color:#ff6b61">34</b> и <b style="color:#4fe0ff">55</b>. 55 ÷ 34 ≈ 1,618.</p></div>
+
+<div class="card"><a rel="ar" href="models/pinecone.usdz"><img src="thumbs/pinecone.jpg" alt="Шишка"><span class="btn">🌲 Показать на столе</span></a>
+<h2>Шишка</h2><p>Две системы спиралей: <b style="color:#ffa63d">8</b> и <b style="color:#4fe0ff">13</b>. 13 ÷ 8 = 1,625 ≈ φ. Всего 89 чешуек.</p></div>
+
+<div class="card"><a rel="ar" href="models/nautilus.usdz"><img src="thumbs/nautilus.jpg" alt="Наутилус"><span class="btn">🐚 Показать на столе</span></a>
+<h2>Наутилус</h2><p>Квадраты 1, 1, 2, 3, 5, 8, 13 и красная золотая спираль. 13 ÷ 8 ≈ φ. Настоящая раковина растёт чуть медленнее.</p></div>
+
+<script>
+  var a = document.createElement('a');
+  if (!(a.relList && a.relList.supports && a.relList.supports('ar'))) document.getElementById('warn').style.display = 'block';
+</script>
+</body></html>

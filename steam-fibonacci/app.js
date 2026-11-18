@@ -268,7 +268,7 @@
       over.add(polyline([toW(b.x0, b.y0, Y), toW(b.x1, b.y0, Y), toW(b.x1, b.y1, Y), toW(b.x0, b.y1, Y)], '#ffd54a', 0.0035, true, true));
       const ap = []; for (let i = 0; i <= 24; i++) { const a = b.a0 + (b.a1 - b.a0) * i / 24; ap.push(toW(b.cx + b.s * Math.cos(a), b.cy + b.s * Math.sin(a), Y)); }
       over.add(tube(ap, '#ff4d6d', 0.0055, true));
-      const t = makeLabel(String(lay.F[k]), { fs: 64, h: 0.075, bg: false, color: '#ffe082' });
+      const t = makeLabel(String(lay.F[k]), { fs: 64, h: 0.075, bg: false, color: '#ffe082' }); t.userData.flat = true;
       t.position.copy(toW((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, Y)); over.add(t); list.push(t);
     }
     const group = new THREE.Group(); group.add(body); group.add(over);
