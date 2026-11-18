@@ -299,6 +299,8 @@
       '13 ÷ 8 = 1,625 ≈ φ. <i>Настоящая раковина растёт чуть медленнее — это приближение.</i>' }
   ];
 
+  window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus], INFO: INFO };
+
   AFRAME.registerComponent('fib-app', {
     init: function () {
       this.inAR = this.el.parentNode && this.el.parentNode.tagName === 'A-MARKER';
