@@ -14,6 +14,6 @@
 Всё работает офлайн-библиотеками из `lib/` (A-Frame 1.3.0, AR.js 3.4.5). Модели строятся кодом в `app.js`.
 
 ## Режимы
-- `ios.html` — iPhone/iPad: AR Quick Look, модель ставится прямо на стол (файлы `models/*.usdz`, 30 см).
+- `ios.html` — iPhone/iPad: AR Quick Look, модель ставится прямо на стол (файлы `models/*.usdz`, 15 см).
 - `table.html` — Android (Chrome + ARCore): поиск стола и тап для установки.
 - `index.html` — любой телефон: маркер на листе A4.
