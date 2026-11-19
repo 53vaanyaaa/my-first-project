@@ -8,8 +8,8 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;touch-action:none}
   .ui{position:fixed;z-index:10}
   #top{top:0;left:0;right:0;padding:10px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;background:linear-gradient(#000a,#0000)}
-  #top h1{font-size:15px;margin:0;font-weight:700}
-  .chip{border:1px solid #fff5;background:#0008;color:#fff;border-radius:18px;padding:7px 12px;font-size:13px;cursor:pointer}
+  #top h1{font-size:14px;margin:0;font-weight:700;white-space:nowrap}
+  .chip{border:1px solid #fff5;background:#0008;color:#fff;border-radius:16px;padding:6px 9px;font-size:12px;cursor:pointer;white-space:nowrap}
   #hint{top:46%;left:0;right:0;text-align:center;font-size:17px;padding:0 24px;text-shadow:0 1px 6px #000;pointer-events:none}
   #hint small{display:block;opacity:.8;margin-top:6px;font-size:13px}
   #bottom{left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c 35%)}
@@ -29,7 +29,7 @@
 </head>
 <body>
 <div id="top" class="ui">
-  <h1>STEAM · Фибоначчи</h1>
+  <h1>Фибоначчи</h1>
   <div style="display:flex;gap:6px">
     <button class="chip" id="bLab">Подписи ✓</button>
     <a class="chip" href="ios.html" style="text-decoration:none;color:#fff">🍎</a>
@@ -50,11 +50,14 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search), is3d = q.get('mode') === '3d';
-  var lights = '<a-entity light="type:ambient;color:#ffffff;intensity:0.85"></a-entity>' +
-               '<a-entity light="type:directional;color:#ffffff;intensity:0.9" position="1 3 2"></a-entity>';
+  // «кинематографичный» свет: тёплый ключевой, холодный контровой, мягкое небо
+  var lights = '<a-entity light="type:hemisphere;color:#e6eeff;groundColor:#3a2c1c;intensity:0.6"></a-entity>' +
+               '<a-entity light="type:ambient;color:#ffffff;intensity:0.18"></a-entity>' +
+               '<a-entity light="type:directional;color:#fff0d8;intensity:1.05" position="-1.2 2.6 1.8"></a-entity>' +
+               '<a-entity light="type:directional;color:#9cc2ff;intensity:0.6" position="1.6 1.2 -2.2"></a-entity>';
   var scene;
   if (is3d) {
-    scene = '<a-scene embedded vr-mode-ui="enabled:false" renderer="alpha:true;antialias:true" background="color:#0e1a3a">' + lights +
+    scene = '<a-scene embedded vr-mode-ui="enabled:false" renderer="alpha:true;antialias:true">' + lights +
       '<a-entity camera position="0 0.45 1.45" rotation="-6 0 0"></a-entity>' +
       '<a-entity position="0 -0.05 0" fib-app></a-entity></a-scene>';
   } else {
@@ -68,7 +71,7 @@
   bm.textContent = is3d ? '📷 AR' : '🧊 без камеры';
   bm.href = is3d ? location.pathname : location.pathname + '?mode=3d';
   var hint = document.getElementById('hint');
-  if (is3d) hint.style.display = 'none';
+  if (is3d) { hint.style.display = 'none'; document.body.style.background = 'radial-gradient(ellipse at 50% 38%, #2a3560 0%, #10162e 55%, #05070f 100%)'; }
   var mk = document.getElementById('mk');
   if (mk) { mk.addEventListener('markerFound', function () { hint.style.display = 'none'; });
             mk.addEventListener('markerLost', function () { hint.style.display = ''; }); }
