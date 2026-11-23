@@ -18,7 +18,7 @@
 </head>
 <body>
 <h1>🪵 Фибоначчи на твоём столе</h1>
-<p class="lead">Нажми на картинку → «AR» → наведи камеру на стол, подожди секунду и модель встанет на столешницу. Модель привязывается к столу и стоит на месте: обойди её кругом и посмотри со всех сторон, поднеси ближе. Один палец двигает, два пальца вращают и увеличивают. Вкладка «Объект» вверху даёт покрутить модель без камеры.</p>
+<p class="lead">Нажми на картинку → наведи камеру на стол (на iPhone — вкладка «AR»), подожди секунду и модель встанет на столешницу. Модель привязывается к столу и стоит на месте: обойди её кругом и посмотри со всех сторон, поднеси ближе. Один палец двигает, два пальца вращают и увеличивают. Вкладка «Объект» вверху даёт покрутить модель без камеры.</p>
 <div id="warn">Эта страница для iPhone/iPad в Safari. На других устройствах: <a class="l" href="table.html">режим «стол» (Android)</a> или <a class="l" href="index.html">режим с маркером</a>.</div>
 
 <div class="card"><a rel="ar" href="models/sunflower.usdz"><img src="thumbs/sunflower.jpg" alt="Подсолнух"><span class="btn">🌻 Показать на столе</span></a>
@@ -37,7 +37,31 @@
 
 
 <script>
-  var a = document.createElement('a');
-  if (!(a.relList && a.relList.supports && a.relList.supports('ar'))) document.getElementById('warn').style.display = 'block';
+  // Один сайт для всех телефонов: iPhone → Apple AR Quick Look (USDZ), Android → Google Scene Viewer (GLB)
+  var ua = navigator.userAgent;
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/.test(ua);
+  var inApp = /Instagram|FBAN|FBAV|Telegram|WhatsApp|Line\/|VKClient|YaBrowser\/.*Mobile.*YaApp|; wv\)/.test(ua) || (isIOS && (!/Safari\//.test(ua) || /CriOS|FxiOS|EdgiOS/.test(ua)));
+  var names = { sunflower: 0, pinecone: 1, nautilus: 2, rose: 3, hand: 4 };
+  var warn = document.getElementById('warn');
+  document.querySelectorAll('.card a').forEach(function (a) {
+    var m = a.getAttribute('href').replace(/^models\/|\.usdz$/g, ''), i = names[m], title = a.querySelector('img').alt;
+    var viewer = new URL('index.html?mode=3d&model=' + i, location.href).href;
+    if (isAndroid) {
+      a.removeAttribute('rel');
+      var glb = new URL('models/' + m + '.glb', location.href).href;
+      a.href = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(glb) + '&mode=ar_preferred&title=' + encodeURIComponent(title) +
+        '#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(viewer) + ';end;';
+    } else if (!isIOS) {
+      a.removeAttribute('rel'); a.href = viewer;   // компьютер: просто 3D
+    }
+  });
+  if (inApp) {
+    warn.innerHTML = '⚠️ AR не работает внутри мессенджера. Нажми <b>⋯</b> (или значок компаса) → <b>«Открыть в ' + (isIOS ? 'Safari' : 'Chrome') + '»</b>.<br><button id="copy" style="margin-top:8px;padding:8px 12px;border-radius:10px;border:0;font-weight:700">Скопировать ссылку</button>';
+    warn.style.display = 'block';
+    document.getElementById('copy').onclick = function () { navigator.clipboard && navigator.clipboard.writeText(location.href); this.textContent = 'Скопировано ✓'; };
+  } else if (!isIOS && !isAndroid) {
+    warn.innerHTML = 'На компьютере модели открываются в 3D. Для AR открой эту страницу на телефоне.'; warn.style.display = 'block';
+  }
 </script>
 </body></html>
