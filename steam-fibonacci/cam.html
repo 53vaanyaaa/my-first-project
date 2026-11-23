@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Золотое сечение · AR через камеру</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;touch-action:none}
+  video,canvas{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover}
+  #start{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(ellipse at 50% 38%,#2a3560,#0b1020 70%)}
+  #start button{font-size:20px;padding:16px 30px;border:0;border-radius:16px;background:#ffd54a;color:#1b1500;font-weight:700}
+  #start p{max-width:340px;opacity:.85;line-height:1.4;margin:0}
+  .ui{position:fixed;z-index:10}
+  #top{top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(#0009,#0000)}
+  .chip{border:1px solid #fff5;background:#0008;color:#fff;border-radius:16px;padding:8px 12px;font-size:14px;text-decoration:none}
+  #hint{top:56px;left:0;right:0;text-align:center;font-size:15px;text-shadow:0 1px 6px #000;pointer-events:none;padding:0 16px}
+  #bottom{left:0;right:0;bottom:0;padding:8px 10px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000a 40%)}
+  #tabs{display:flex;gap:8px}
+  .tab{flex:1;border:1px solid #fff4;background:#1a2447cc;color:#fff;border-radius:14px;padding:12px 4px;font-size:20px}
+  .tab.on{background:#ffd54a;border-color:#ffd54a}
+  #load{top:45%;left:0;right:0;text-align:center;font-size:16px;display:none;text-shadow:0 1px 6px #000}
+</style>
+<script src="lib/aframe.min.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay></video>
+<div id="start">
+  <h1 style="margin:0">📷 AR через камеру</h1>
+  <p>Наведи камеру на стол и нажми кнопку. Модель встанет перед тобой на столешницу.<br>Крути пальцем, чтобы посмотреть со всех сторон, двумя пальцами — увеличить.</p>
+  <button id="go">Включить камеру</button>
+  <p id="msg" style="color:#ff9a8a"></p>
+</div>
+<div id="top" class="ui"><a class="chip" href="ios.html">← Назад</a><button class="chip" id="here">📍 Поставить сюда</button></div>
+<div id="hint" class="ui">Наведи камеру на стол · тапни «Поставить сюда»</div>
+<div id="load" class="ui">Загрузка модели…</div>
+<div id="bottom" class="ui"><div id="tabs">
+  <button class="tab" data-i="0">🌻</button><button class="tab" data-i="1">🌲</button><button class="tab" data-i="2">🐚</button><button class="tab" data-i="3">🌹</button><button class="tab" data-i="4">✋</button>
+</div></div>
+<script>
+(function () {
+  var THREE = AFRAME.THREE, M = window.FIBMODELS;
+  var q = new URLSearchParams(location.search), cur = Math.max(0, Math.min(4, +(q.get('model') || 0)));
+  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
+  document.body.appendChild(renderer.domElement);
+  var scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.01, 50);
+  scene.add(new THREE.HemisphereLight(0xe6eeff, 0x3a2c1c, 0.45));
+  M.setupCinematic(renderer, scene);
+  // «якорь» на столе: модель + ключевой свет + тень
+  var anchor = new THREE.Group(), spin = new THREE.Group(), SCALE = 0.22; anchor.add(spin); scene.add(anchor);
+  M.addShadowRig(anchor);
+  var cache = {}, model = null;
+  function show(i) {
+    cur = i; document.querySelectorAll('.tab').forEach(function (b, k) { b.classList.toggle('on', k === i); });
+    if (model) spin.remove(model);
+    if (!cache[i]) {
+      document.getElementById('load').style.display = 'block';
+      setTimeout(function () { var m = M.builders[i](); M.linearize(m); M.enableShadows(m); m.scale.setScalar(1); cache[i] = m; document.getElementById('load').style.display = 'none'; show(i); }, 30);
+      return;
+    }
+    model = cache[i]; spin.add(model);
+  }
+  anchor.scale.setScalar(SCALE);
+
+  // ориентация телефона (гироскоп) → поворот камеры; модель остаётся на месте в мире
+  var dev = null, screenOri = 0, zee = new THREE.Vector3(0, 0, 1), eul = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+  window.addEventListener('deviceorientation', function (e) { if (e.alpha !== null) dev = e; });
+  window.addEventListener('orientationchange', function () { screenOri = (screen.orientation && screen.orientation.angle) || window.orientation || 0; });
+  function camQuat() {
+    if (!dev) return null;
+    var d2r = Math.PI / 180;
+    eul.set(dev.beta * d2r, dev.alpha * d2r, -dev.gamma * d2r, 'YXZ');
+    var qq = new THREE.Quaternion().setFromEuler(eul); qq.multiply(q1); qq.multiply(q0.setFromAxisAngle(zee, -screenOri * d2r));
+    return qq;
+  }
+  // поставить модель перед камерой на «стол» (≈ 45 см ниже телефона, 60 см вперёд)
+  function place() {
+    var fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); fwd.y = 0;
+    if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1); fwd.normalize();
+    anchor.position.set(fwd.x * 0.6, -0.42, fwd.z * 0.6);
+    anchor.rotation.y = Math.atan2(fwd.x, fwd.z) + Math.PI;    // «лицом» к зрителю
+    document.getElementById('hint').textContent = 'Крути пальцем · двумя пальцами — увеличить';
+  }
+  document.getElementById('here').onclick = place;
+
+  // жесты: один палец — вращение, два — масштаб
+  var pts = {}, lastX = 0, pinch0 = 0, sc0 = SCALE;
+  renderer.domElement.addEventListener('pointerdown', function (e) { pts[e.pointerId] = [e.clientX, e.clientY]; lastX = e.clientX; var k = Object.keys(pts); if (k.length === 2) { var a = pts[k[0]], b = pts[k[1]]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); sc0 = anchor.scale.x; } });
+  window.addEventListener('pointermove', function (e) {
+    if (!pts[e.pointerId]) return; pts[e.pointerId] = [e.clientX, e.clientY]; var k = Object.keys(pts);
+    if (k.length === 1) { spin.rotation.y += (e.clientX - lastX) * 0.012; lastX = e.clientX; }
+    else if (k.length === 2 && pinch0) { var a = pts[k[0]], b = pts[k[1]]; anchor.scale.setScalar(Math.max(0.08, Math.min(0.8, sc0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch0))); }
+  });
+  ['pointerup', 'pointercancel'].forEach(function (t) { window.addEventListener(t, function (e) { delete pts[e.pointerId]; pinch0 = 0; }); });
+  document.querySelectorAll('.tab').forEach(function (b) { b.addEventListener('click', function () { show(+b.dataset.i); }); });
+  window.addEventListener('resize', function () { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+
+  var placed = false;
+  renderer.setAnimationLoop(function () {
+    var qq = camQuat();
+    if (qq) camera.quaternion.copy(qq); else camera.quaternion.setFromEuler(new THREE.Euler(-0.6, 0, 0));
+    if (!placed && (qq || performance.now() > 1500)) { place(); placed = true; }
+    renderer.render(scene, camera);
+  });
+
+  document.getElementById('go').onclick = function () {
+    var msg = document.getElementById('msg');
+    var askGyro = (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) ? DeviceOrientationEvent.requestPermission().catch(function () {}) : Promise.resolve();
+    askGyro.then(function () {
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    }).then(function (stream) {
+      var v = document.getElementById('cam'); v.srcObject = stream; v.play();
+      document.getElementById('start').style.display = 'none'; placed = false; show(cur);
+    }).catch(function (e) {
+      msg.textContent = 'Камера недоступна (' + (e && e.name || 'ошибка') + '). Разреши доступ к камере в настройках браузера. Пока покажу модель без камеры.';
+      document.body.style.background = 'radial-gradient(ellipse at 50% 38%,#2a3560,#0b1020 70%)';
+      setTimeout(function () { document.getElementById('start').style.display = 'none'; placed = false; show(cur); }, 2500);
+    });
+  };
+})();
+</script>
+</body>
+</html>

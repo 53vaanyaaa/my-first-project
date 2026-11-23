@@ -14,6 +14,7 @@
   .card h2{margin:12px 2px 4px;font-size:18px} .card p{margin:0 2px;font-size:14px;line-height:1.45;opacity:.92}
   #warn{display:none;background:#5a2a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:14px}
   a.l{color:#ffd54a}
+  a.alt{display:block;margin:10px 2px 2px;color:#ffd54a;font-size:14px;text-decoration:none}
 </style>
 </head>
 <body>
@@ -48,10 +49,14 @@
     var m = a.getAttribute('href').replace(/^models\/|\.usdz$/g, ''), i = names[m], title = a.querySelector('img').alt;
     var viewer = new URL('index.html?mode=3d&model=' + i, location.href).href;
     if (isAndroid) {
-      a.removeAttribute('rel');
-      var glb = new URL('models/' + m + '.glb', location.href).href;
-      a.href = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(glb) + '&mode=ar_preferred&title=' + encodeURIComponent(title) +
-        '#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(viewer) + ';end;';
+      // основной режим: своя AR через камеру и гироскоп — работает на любом Android, ARCore не нужен
+      a.removeAttribute('rel'); a.href = 'cam.html?model=' + i;
+      var glb = new URL('models/' + m + '.glb', location.href).href, camUrl = new URL('cam.html?model=' + i, location.href).href;
+      var g = document.createElement('a'); g.className = 'alt';
+      g.href = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(glb) + '&mode=ar_preferred&title=' + encodeURIComponent(title) +
+        '#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(camUrl) + ';end;';
+      g.textContent = '🔎 Точный AR от Google (если телефон поддерживает ARCore)';
+      a.parentNode.appendChild(g);
     } else if (!isIOS) {
       a.removeAttribute('rel'); a.href = viewer;   // компьютер: просто 3D
     }
