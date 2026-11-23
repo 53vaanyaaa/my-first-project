@@ -547,7 +547,7 @@
     const hand = new THREE.Group(); hand.position.set(0, 0.06, 0); root.add(hand);
     // ладонь и запястье
     const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), skin); palm.scale.set(0.17, 0.2, 0.06); palm.position.y = 0.32; hand.add(palm);
-    [[0.085, 0.24, 0.03, 0.085, 0.11, 0.05], [-0.09, 0.25, 0.025, 0.07, 0.12, 0.045]].forEach(([px, py, pz, sx, sy, sz]) => { const mm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); mm.scale.set(sx, sy, sz); mm.position.set(px, py, pz); hand.add(mm); });
+    [[0.075, 0.25, 0.012, 0.08, 0.11, 0.045], [-0.08, 0.27, 0.01, 0.065, 0.12, 0.042]].forEach(([px, py, pz, sx, sy, sz]) => { const mm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); mm.scale.set(sx, sy, sz); mm.position.set(px, py, pz); hand.add(mm); });
     const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.24, 32), skin); wrist.scale.z = 0.55; wrist.position.y = 0.1; hand.add(wrist);
     const sph = new THREE.SphereGeometry(1, 24, 16);
     // палец: фаланги длиной d, d·φ, d·φ² — каждая следующая в φ раз длиннее
