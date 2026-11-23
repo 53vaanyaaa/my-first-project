@@ -1,0 +1,12 @@
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*.usdz"
+  [headers.values]
+    Content-Type = "model/vnd.usdz+zip"
+[[headers]]
+  for = "/*.glb"
+  [headers.values]
+    Content-Type = "model/gltf-binary"
