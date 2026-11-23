@@ -299,7 +299,7 @@
     // изогнутый стебель и два листа
     const stemPts = [V(0, 0, 0), V(0.012, 0.16, -0.008), V(-0.006, 0.33, -0.02), V(0, 0.46, -0.035)];
     root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 24, 0.021, 10, false), pbr('#4f7d2a', 0.7)));
-    const leaf = bladeGeo(0.21, 0.13, 0.07, 0.012, 0.42);
+    const leaf = leafGeo(0.22, 0.17, 0.07, 0.01, 12, true);
     [[0.15, 0], [0.27, Math.PI]].forEach(([h, ry], i) => {
       const g = new THREE.Group(); g.position.set(0, h, -0.01); g.rotation.set(0, ry + 0.3 * (i ? -1 : 1), 0.45);
       g.add(new THREE.Mesh(leaf, texMat('leaf', '#ffffff', 0.62, true))); root.add(g);
@@ -335,7 +335,8 @@
     // чешуйка = деревянная пластина + ромбовидный кончик (апофиз) + тёмный «пупок»
     const sph = new THREE.SphereGeometry(1, 10, 7);
     const wt = T('wood'), body = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.85, map: wt.map, normalMap: wt.normal }), N);
-    const apo = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.78, map: wt.map, normalMap: wt.normal }), N);
+    const dia = new THREE.ConeGeometry(1, 1, 4, 1).toNonIndexed(); dia.rotateZ(-Math.PI / 2); dia.computeVertexNormals();   // ромбовидный кончик с гранями
+    const apo = new THREE.InstancedMesh(dia, new THREE.MeshStandardMaterial({ roughness: 0.78, map: wt.map, normalMap: wt.normal }), N);
     const umbo = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.9 }), N);
     const P = new THREE.Object3D(), m4 = new THREE.Matrix4(), m5 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), col = new THREE.Color();
     const put = (im, n, off, sc) => { m4.compose(off, q0, sc); m5.multiplyMatrices(P.matrix, m4); im.setMatrixAt(n, m5); };
@@ -348,15 +349,15 @@
       P.position.set(rho * Math.cos(a), Y0 + H * t, rho * Math.sin(a));
       P.rotation.set(0, -a, slope * 0.85 + 0.3, 'YZX'); P.updateMatrix();
       const s = side * (0.78 + 0.32 * Math.min(1, rho / Rm));
-      put(body, n, V(0, 0, 0), V(0.26 * s, 0.85 * s, 0.62 * s));
-      put(apo, n, V(0.15 * s, 0.42 * s, 0), V(0.2 * s, 0.33 * s, 0.52 * s));
-      put(umbo, n, V(0.33 * s, 0.45 * s, 0), V(0.055 * s, 0.055 * s, 0.055 * s));
+      put(body, n, V(-0.08 * s, 0, 0), V(0.2 * s, 0.62 * s, 0.5 * s));
+      put(apo, n, V(0.1 * s, 0.24 * s, 0), V(0.3 * s, 0.6 * s, 0.8 * s));
+      put(umbo, n, V(0.25 * s, 0.24 * s, 0), V(0.06 * s, 0.06 * s, 0.06 * s));
       col.set('#4a2a14').offsetHSL(0, 0, (rnd(n) - 0.5) * 0.05); body.setColorAt(n, col);
       if (n % 8 === 0) col.set('#ff8a00'); else if (n % 13 === 0) col.set('#18d4ff');
       else col.copy(wood1).lerp(wood2, rnd(n + 31) * 0.7);
       apo.setColorAt(n, col);
       col.set('#2b180b'); umbo.setColorAt(n, col);
-      const tip = V(0.4 * s, 0.45 * s, 0).applyMatrix4(P.matrix);
+      const tip = V(0.3 * s, 0.24 * s, 0).applyMatrix4(P.matrix);
       if (n === 8 * Math.floor((N - 1) / 8)) marks.pa = tip;
       if (n === 13 * Math.floor((N - 1) / 13)) marks.pb = tip;
     }
@@ -517,7 +518,7 @@
     for (let i = 0; i < N; i++) {
       const f = i / (N - 1), a = i * GA;
       const len = 0.07 + 0.17 * Math.pow(f, 0.8), wid = len * (0.95 + 0.25 * f);
-      const geo = bladeGeo(len, wid, -0.02 + 0.07 * f * f, wid * (0.42 - 0.22 * f), 0.72);
+      const geo = roseGeo(len, wid, wid * (0.55 - 0.35 * f), f > 0.45 ? wid * 0.38 * (f - 0.45) / 0.55 : 0, -0.02 + 0.06 * f * f);
       const hex = '#' + new THREE.Color().setHSL(0, 0.3, 0.6 + 0.4 * Math.round(f * 5) / 5).getHexString();
       const m = new THREE.Mesh(geo, texMat('rose', hex, 0.72, true));
       const o = new THREE.Group(); o.rotation.set(0, -a, 1.35 - 1.05 * Math.pow(f, 0.7), 'YZX');
@@ -529,7 +530,7 @@
     const recept = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), pbr('#3d6b26', 0.75)); recept.position.y = -0.05; head.add(recept);
     const stemPts = [V(0, 0, 0), V(-0.015, 0.18, 0.01), V(0.01, 0.36, -0.01), V(0, 0.48, -0.02)];
     root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 24, 0.013, 8, false), pbr('#3e6e28', 0.7)));
-    const leaf = bladeGeo(0.12, 0.075, 0.03, 0.008, 0.45);
+    const leaf = leafGeo(0.12, 0.075, 0.03, 0.006, 9, false);
     [[0.17, 0.4], [0.3, Math.PI + 0.3]].forEach(([h, ry]) => { const g = new THREE.Group(); g.position.set(0, h, 0); g.rotation.set(0, ry, 0.5); g.add(new THREE.Mesh(leaf, texMat('leaf', '#d8e8d0', 0.6, true))); root.add(g); });
     // золотой рисунок поверх цветка (центр спирали = центр розы)
     const ov = goldenOverlay(0.5, true); ov.position.y = 0.09; head.add(ov);
@@ -539,46 +540,215 @@
     return root;
   }
 
-  /* ---------- 5. РУКА ---------- */
+  /* ---------- органические формы ---------- */
+  // Лист с зубчатым краем (сердцевидный у подсолнуха, яйцевидный у розы); вдоль +X, изгиб вниз
+  function leafGeo(len, wid, droop, cup, teeth, cordate) {
+    const pts = [], M = 90;
+    const hw = t => wid * 0.5 * Math.pow(Math.sin(Math.PI * Math.min(1, t)), 0.75) * (1 - 0.25 * t) + (cordate ? wid * 0.18 * Math.exp(-t * 14) : 0);
+    const saw = t => 1 + 0.07 * (1 - Math.abs(((t * teeth) % 1) * 2 - 1)) * Math.sin(Math.PI * t);
+    for (let i = 0; i <= M; i++) { const t = i / M; pts.push(new THREE.Vector2(hw(t) * saw(t), t * len - (cordate ? wid * 0.12 * Math.exp(-t * 20) : 0))); }
+    for (let i = M; i >= 0; i--) { const t = i / M; pts.push(new THREE.Vector2(-hw(t) * saw(t), t * len - (cordate ? wid * 0.12 * Math.exp(-t * 20) : 0))); }
+    const g = new THREE.ShapeGeometry(new THREE.Shape(pts), 1), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), t = Math.max(0, y / len), w = x / (wid * 0.5);
+      p.setXYZ(i, y, -droop * t * t + cup * w * w - 0.004 * Math.abs(w) * Math.sin(t * 40), x);   // «ребристость» жилок
+      g.attributes.uv.setXY(i, x / wid + 0.5, t);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+  // Лепесток розы: широкий, закруглённый с лёгкой выемкой; края у внешних лепестков отгибаются наружу
+  function roseGeo(len, wid, cup, reflex, droop) {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    s.bezierCurveTo(wid * 0.28, len * 0.04, wid * 0.62, len * 0.42, wid * 0.52, len * 0.82);
+    s.bezierCurveTo(wid * 0.42, len * 1.02, wid * 0.1, len * 1.02, 0, len * 0.95);
+    s.bezierCurveTo(-wid * 0.1, len * 1.02, -wid * 0.42, len * 1.02, -wid * 0.52, len * 0.82);
+    s.bezierCurveTo(-wid * 0.62, len * 0.42, -wid * 0.28, len * 0.04, 0, 0);
+    const g = new THREE.ShapeGeometry(s, 16), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), t = y / len, w = x / (wid * 0.5);
+      let up = cup * w * w * (0.35 + t) - droop * t * t;
+      if (t > 0.55) up -= reflex * Math.pow((t - 0.55) / 0.45, 2) * (0.4 + 0.6 * Math.abs(w));   // отгиб края
+      p.setXYZ(i, y, up + 0.003 * Math.sin(w * 9 + t * 5), x);                                       // лёгкая волна
+      g.attributes.uv.setXY(i, x / wid + 0.5, t);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+
+  // Поверхность по «полю расстояний» (SDF) — для гладкой, цельной кожи руки (метод surface nets)
+  function surfaceNets(sdf, bmin, bmax, step) {
+    const nx = Math.ceil((bmax[0] - bmin[0]) / step) + 1, ny = Math.ceil((bmax[1] - bmin[1]) / step) + 1, nz = Math.ceil((bmax[2] - bmin[2]) / step) + 1;
+    const F = new Float32Array(nx * ny * nz), id = (i, j, k) => i + nx * (j + ny * k);
+    for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) F[id(i, j, k)] = sdf(bmin[0] + i * step, bmin[1] + j * step, bmin[2] + k * step);
+    const cx = nx - 1, cy = ny - 1, cid = (i, j, k) => i + cx * (j + cy * k);
+    const vid = new Int32Array(cx * cy * (nz - 1)).fill(-1), pos = [];
+    const E = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+    const v = new Float32Array(8);
+    for (let k = 0; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+      let mask = 0;
+      for (let c = 0; c < 8; c++) { v[c] = F[id(i + (c & 1), j + ((c >> 1) & 1), k + ((c >> 2) & 1))]; if (v[c] < 0) mask |= 1 << c; }
+      if (mask === 0 || mask === 255) continue;
+      let sx = 0, sy = 0, sz = 0, n = 0;
+      for (const [a, b] of E) {
+        if ((v[a] < 0) === (v[b] < 0)) continue;
+        const t = v[a] / (v[a] - v[b]);
+        sx += (a & 1) + ((b & 1) - (a & 1)) * t; sy += ((a >> 1) & 1) + (((b >> 1) & 1) - ((a >> 1) & 1)) * t; sz += ((a >> 2) & 1) + (((b >> 2) & 1) - ((a >> 2) & 1)) * t; n++;
+      }
+      vid[cid(i, j, k)] = pos.length / 3;
+      pos.push(bmin[0] + (i + sx / n) * step, bmin[1] + (j + sy / n) * step, bmin[2] + (k + sz / n) * step);
+    }
+    const idx = [];
+    const quad = (a, b, c, d, flip) => { if (a < 0 || b < 0 || c < 0 || d < 0) return; if (flip) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c); };
+    for (let k = 1; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
+      const s0 = F[id(i, j, k)] < 0;
+      if (s0 !== (F[id(i + 1, j, k)] < 0)) quad(vid[cid(i, j - 1, k - 1)], vid[cid(i, j, k - 1)], vid[cid(i, j, k)], vid[cid(i, j - 1, k)], s0);
+      if (s0 !== (F[id(i, j + 1, k)] < 0)) quad(vid[cid(i - 1, j, k - 1)], vid[cid(i - 1, j, k)], vid[cid(i, j, k)], vid[cid(i, j, k - 1)], s0);
+      if (s0 !== (F[id(i, j, k + 1)] < 0)) quad(vid[cid(i - 1, j - 1, k)], vid[cid(i, j - 1, k)], vid[cid(i, j, k)], vid[cid(i - 1, j, k)], s0);
+    }
+    // гладкие нормали — по градиенту поля
+    const nor = new Float32Array(pos.length), h = step * 0.5;
+    for (let q = 0; q < pos.length; q += 3) {
+      const x = pos[q], y = pos[q + 1], z = pos[q + 2];
+      const gx = sdf(x + h, y, z) - sdf(x - h, y, z), gy = sdf(x, y + h, z) - sdf(x, y - h, z), gz = sdf(x, y, z + h) - sdf(x, y, z - h), l = Math.hypot(gx, gy, gz) || 1;
+      nor[q] = gx / l; nor[q + 1] = gy / l; nor[q + 2] = gz / l;
+    }
+    // ориентация треугольников по нормалям
+    for (let t = 0; t < idx.length; t += 3) {
+      const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3;
+      const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], wx = pos[c] - pos[a], wy = pos[c + 1] - pos[a + 1], wz = pos[c + 2] - pos[a + 2];
+      const fx = uy * wz - uz * wy, fy = uz * wx - ux * wz, fz = ux * wy - uy * wx;
+      if (fx * nor[a] + fy * nor[a + 1] + fz * nor[a + 2] < 0) { const tmp = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = tmp; }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    g.setIndex(idx);
+    return g;
+  }
+  const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+  // «круглый конус» от A (радиус ra) до B (радиус rb); sz — сплющивание по Z
+  function sdSeg(px, py, pz, A, B, ra, rb, sz) {
+    pz *= sz || 1;
+    const az = A[2] * (sz || 1), bz = B[2] * (sz || 1);
+    const bax = B[0] - A[0], bay = B[1] - A[1], baz = bz - az, pax = px - A[0], pay = py - A[1], paz = pz - az;
+    let h = (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz); h = h < 0 ? 0 : h > 1 ? 1 : h;
+    const dx = pax - bax * h, dy = pay - bay * h, dz = paz - baz * h;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz) - (ra + (rb - ra) * h);
+  }
+  function sdEll(px, py, pz, c, r) {
+    const x = (px - c[0]) / r[0], y = (py - c[1]) / r[1], z = (pz - c[2]) / r[2];
+    const k0 = Math.sqrt(x * x + y * y + z * z), k1 = Math.sqrt(x * x / (r[0] * r[0]) + y * y / (r[1] * r[1]) + z * z / (r[2] * r[2]));
+    return k0 * (k0 - 1) / (k1 || 1e-6);
+  }
+
+  /* ---------- 5. РУКА (реальные пропорции взрослой кисти, в сантиметрах) ---------- */
   function buildHand() {
     const root = new THREE.Group();
-    const skin = texMat('skin', '#e0a98a', 0.5, false, { clearcoat: 0.12, clearcoatRoughness: 0.5 }), nail = new THREE.MeshPhysicalMaterial({ color: '#f1cfc2', roughness: 0.25, clearcoat: 0.8, clearcoatRoughness: 0.1 });
-    skin.normalScale = new THREE.Vector2(0.35, 0.35);
-    const hand = new THREE.Group(); hand.position.set(0, 0.06, 0); root.add(hand);
-    // ладонь и запястье
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), skin); palm.scale.set(0.17, 0.2, 0.06); palm.position.y = 0.32; hand.add(palm);
-    [[0.075, 0.25, 0.012, 0.08, 0.11, 0.045], [-0.08, 0.27, 0.01, 0.065, 0.12, 0.042]].forEach(([px, py, pz, sx, sy, sz]) => { const mm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); mm.scale.set(sx, sy, sz); mm.position.set(px, py, pz); hand.add(mm); });
-    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.24, 32), skin); wrist.scale.z = 0.55; wrist.position.y = 0.1; hand.add(wrist);
-    const sph = new THREE.SphereGeometry(1, 24, 16);
-    // палец: фаланги длиной d, d·φ, d·φ² — каждая следующая в φ раз длиннее
-    function finger(x, y, d, r, splay, curl) {
-      let g = new THREE.Group(); g.position.set(x, y, 0); g.rotation.z = splay; hand.add(g);
-      const lens = [d * PHI * PHI, d * PHI, d];
-      lens.forEach((L, k) => {
-        const rr = r * (1 - 0.1 * k);
-        const j = new THREE.Mesh(sph, skin); j.scale.setScalar(rr * 1.05); g.add(j);
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 20), skin); c.position.y = L / 2; g.add(c);
-        const n = new THREE.Group(); n.position.y = L; n.rotation.x = curl; g.add(n); g = n;
-        if (k === 2) { const tip = new THREE.Mesh(sph, skin); tip.scale.setScalar(rr * 0.92); g.add(tip);
-          const nl = new THREE.Mesh(sph, nail); nl.scale.set(rr * 0.75, rr * 0.9, rr * 0.25); nl.position.set(0, -rr * 0.6, -rr * 0.75); g.add(nl); }
-      });
+    const CM = 0.04;                          // 1 см = 0.04 единицы модели
+    const PH = PHI;
+    // кости-«звенья» пальцев: направление по рысканию (yaw, в сторону большого пальца +X) и сгибу (pitch, к ладони +Z)
+    const segs = [], joints = [], nails = [], pads = [];
+    function chain(start, yaw, pitches, lens, radii) {
+      let p = start.slice(), a = 0;
+      for (let k = 0; k < lens.length; k++) {
+        a += pitches[k];
+        const d = [Math.sin(yaw) * Math.cos(a), Math.cos(yaw) * Math.cos(a), Math.sin(a)];
+        const q = [p[0] + d[0] * lens[k], p[1] + d[1] * lens[k], p[2] + d[2] * lens[k]];
+        segs.push([p, q, radii[k], radii[k + 1]]);
+        const palmar = [-Math.sin(yaw) * Math.sin(a), -Math.cos(yaw) * Math.sin(a), Math.cos(a)];   // ⟂ к пальцу, в сторону ладони
+        if (k > 0) joints.push({ p: p.slice(), d, n: palmar, r: radii[k] });
+        if (k === lens.length - 1) {
+          nails.push({ p: [q[0] - d[0] * lens[k] * 0.42 - palmar[0] * radii[k + 1] * 0.9, q[1] - d[1] * lens[k] * 0.42 - palmar[1] * radii[k + 1] * 0.9, q[2] - d[2] * lens[k] * 0.42 - palmar[2] * radii[k + 1] * 0.9], d, n: palmar, r: radii[k + 1], L: lens[k] });
+          pads.push({ c: [q[0] - d[0] * lens[k] * 0.35 + palmar[0] * radii[k + 1] * 0.35, q[1] - d[1] * lens[k] * 0.35 + palmar[1] * radii[k + 1] * 0.35, q[2] - d[2] * lens[k] * 0.35 + palmar[2] * radii[k + 1] * 0.35], r: radii[k + 1] * 0.8 });
+        }
+        p = q;
+      }
     }
-    finger(-0.11, 0.48, 0.042, 0.026, 0.12, -0.12);   // мизинец
-    finger(-0.04, 0.51, 0.052, 0.029, 0.03, -0.1);    // безымянный
-    finger(0.035, 0.52, 0.056, 0.03, -0.02, -0.1);    // средний
-    finger(0.11, 0.5, 0.052, 0.029, -0.1, -0.1);      // указательный
-    // большой палец
+    const deg = Math.PI / 180;
+    // фаланги каждого пальца: d, d·φ, d·φ² (от кончика к ладони); указательный 0.93, безымянный 0.96, мизинец 0.76 от среднего
+    const fingers = [
+      { mcp: [2.7, 9.55, -0.15], yaw: 4 * deg, sc: 0.93, r: 0.97 },    // указательный
+      { mcp: [0.85, 10.0, -0.2], yaw: 0.5 * deg, sc: 1.0, r: 1.0 },    // средний
+      { mcp: [-1.0, 9.65, -0.2], yaw: -3 * deg, sc: 0.96, r: 0.95 },   // безымянный
+      { mcp: [-2.7, 8.75, -0.1], yaw: -8 * deg, sc: 0.76, r: 0.84 }    // мизинец
+    ];
+    const D = 1.85;
+    fingers.forEach((f, i) => chain(f.mcp, f.yaw, [9 * deg, (14 + i * 2) * deg, 9 * deg], [D * PH * PH * f.sc, D * PH * f.sc, D * f.sc], [f.r, f.r * 0.91, f.r * 0.83, f.r * 0.76]));
+    // большой палец: пясть отходит у запястья, смотрит вверх-наружу и к ладони
     (function () {
-      let g = new THREE.Group(); g.position.set(0.15, 0.24, 0.01); g.rotation.set(0, 0, -0.85); hand.add(g);
-      [0.09, 0.065, 0.045].forEach((L, k) => {
-        const rr = 0.034 * (1 - 0.08 * k), j = new THREE.Mesh(sph, skin); j.scale.setScalar(rr); g.add(j);
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 12), skin); c.position.y = L / 2; g.add(c);
-        const n = new THREE.Group(); n.position.y = L; n.rotation.z = 0.2; g.add(n); g = n;
-        if (k === 2) { const tip = new THREE.Mesh(sph, skin); tip.scale.setScalar(rr * 0.9); g.add(tip); }
+      const base = [2.5, 1.9, 0.5];
+      const dirs = [[40, 18], [28, 14], [20, 10]], L = [4.4, 3.1, 2.6], R = [1.38, 1.14, 1.02, 0.9];
+      let p = base;
+      dirs.forEach(([yw, pt], k) => {
+        const yaw = yw * deg, a = pt * deg, d = [Math.sin(yaw) * Math.cos(a), Math.cos(yaw) * Math.cos(a), Math.sin(a)];
+        const q = [p[0] + d[0] * L[k], p[1] + d[1] * L[k], p[2] + d[2] * L[k]];
+        segs.push([p, q, R[k], R[k + 1]]);
+        const palmar = [-0.72, -0.12, 0.68], l = Math.hypot(palmar[0], palmar[1], palmar[2]);
+        palmar[0] /= l; palmar[1] /= l; palmar[2] /= l;
+        if (k > 0) joints.push({ p: p.slice(), d, n: palmar, r: R[k] });
+        if (k === 2) nails.push({ p: [q[0] - d[0] * L[k] * 0.42 - palmar[0] * R[3] * 0.86, q[1] - d[1] * L[k] * 0.42 - palmar[1] * R[3] * 0.86, q[2] - d[2] * L[k] * 0.42 - palmar[2] * R[3] * 0.86], d, n: palmar, r: R[3] * 1.05, L: L[k] });
+        p = q;
       });
     })();
-    // золотой рисунок: вертикально, поверх ладони и пальцев
-    const ov = goldenOverlay(0.5, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.0, 0.55, 0.08); hand.add(ov);
+    // пястные кости (дают «костяшки» на тыльной стороне) и мягкие ткани ладони
+    const meta = [[[1.55, 1.6, -0.2], [2.75, 9.55, -0.35], 1.15], [[0.45, 1.5, -0.25], [0.85, 10.0, -0.4], 1.2], [[-0.6, 1.6, -0.25], [-1.05, 9.65, -0.4], 1.12], [[-1.6, 1.8, -0.2], [-2.8, 8.75, -0.3], 1.02]];
+    const palmEll = [
+      [[0.0, 5.4, 0.2], [3.75, 4.9, 1.35]],    // тело ладони
+      [[2.3, 3.3, 0.75], [1.85, 2.7, 1.3]],    // возвышение большого пальца
+      [[-2.5, 3.9, 0.55], [1.35, 3.1, 1.05]],  // возвышение мизинца
+      [[0.0, 8.75, 0.55], [3.75, 1.15, 0.9]]   // подушечки под пальцами
+    ];
+    // линии ладони: сердца, ума, жизни (лёгкие бороздки)
+    const lines = [
+      [[-3.8, 7.7], [-1.5, 7.9], [0.6, 8.1], [2.1, 8.6]],
+      [[3.0, 6.3], [1.0, 5.9], [-1.2, 5.6], [-2.9, 5.2]],
+      [[2.9, 6.5], [1.5, 5.0], [0.9, 3.3], [1.2, 1.4]]
+    ];
+    const lineDist = (x, y, L) => { let m = 1e9; for (let i = 0; i < L.length - 1; i++) { const a = L[i], b = L[i + 1], bx = b[0] - a[0], by = b[1] - a[1]; let h = ((x - a[0]) * bx + (y - a[1]) * by) / (bx * bx + by * by); h = Math.max(0, Math.min(1, h)); m = Math.min(m, Math.hypot(x - a[0] - bx * h, y - a[1] - by * h)); } return m; };
+    function sdf(x, y, z) {
+      let d = sdSeg(x, y, z, [0, -5.5, 0.15], [0, 0.6, 0.15], 2.75, 2.85, 1.38);    // предплечье и запястье (сплющено)
+      for (const m of meta) d = smin(d, sdSeg(x, y, z, m[0], m[1], m[2] * 0.85, m[2], 1.0), 1.6);
+      for (const e of palmEll) d = smin(d, sdEll(x, y, z, e[0], e[1]), 1.1);
+      for (const m of meta) d = smin(d, sdSeg(x, y, z, [m[0][0] * 0.6, 1.2, -1.45], [m[1][0], m[1][1] - 0.9, -1.62], 0.2, 0.24, 1.0), 0.45);   // сухожилия
+      for (const m of meta) d = smin(d, sdEll(x, y, z, [m[1][0], m[1][1] - 0.15, -0.85], [0.82, 0.75, 0.95]), 0.55);                            // костяшки
+      for (let s = 0; s < segs.length; s++) { const g = segs[s]; d = smin(d, sdSeg(x, y, z, g[0], g[1], g[2], g[3], 1.12), s % 3 === 0 ? 0.9 : 0.35); }
+      for (const p of pads) d = smin(d, sdEll(x, y, z, p.c, [p.r, p.r * 1.25, p.r * 0.75]), 0.3);
+      // складки на сгибах пальцев (ладонная сторона) и морщинки на костяшках (тыльная)
+      for (const j of joints) {
+        const wx = x - j.p[0], wy = y - j.p[1], wz = z - j.p[2];
+        const al = wx * j.d[0] + wy * j.d[1] + wz * j.d[2];
+        if (Math.abs(al) > 0.6) continue;
+        const side = (wx * j.n[0] + wy * j.n[1] + wz * j.n[2]) / j.r;
+        if (side > 0.25) d += 0.055 * Math.exp(-Math.pow(al / 0.11, 2)) * Math.min(1, (side - 0.25) * 3);
+        else if (side < -0.3) d += 0.014 * (Math.exp(-Math.pow((al - 0.17) / 0.06, 2)) + Math.exp(-Math.pow(al / 0.06, 2)) + Math.exp(-Math.pow((al + 0.17) / 0.06, 2))) * Math.min(1, (-side - 0.3) * 3);
+      }
+      if (z > 0.6 && y > 0.8 && y < 9.2) { let m = 1e9; for (const L of lines) m = Math.min(m, lineDist(x, y, L)); d += 0.09 * Math.exp(-Math.pow(m / 0.13, 2)); }
+      return d;
+    }
+    const geo = surfaceNets(sdf, [-5.2, -5.8, -3.2], [8.6, 19.8, 5.2], 0.14);
+    // UV для текстуры кожи (поры) и перевод в единицы модели
+    const p = geo.attributes.position, uv = [];
+    for (let i = 0; i < p.count; i++) { uv.push(p.getX(i) * 0.22 + p.getZ(i) * 0.1, p.getY(i) * 0.22); p.setXYZ(i, p.getX(i) * CM, (p.getY(i) + 5.8) * CM, p.getZ(i) * CM); }
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    const skin = texMat('skin', '#d9a083', 0.48, false, { clearcoat: 0.1, clearcoatRoughness: 0.55 });
+    skin.normalScale = new THREE.Vector2(0.14, 0.14);
+    root.add(new THREE.Mesh(geo, skin));
+    // ногти: глянцевые, розоватые, слегка выпуклые
+    const nailMat = new THREE.MeshPhysicalMaterial({ color: '#d9a294', roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.15 });
+    const sph = new THREE.SphereGeometry(1, 24, 12);
+    nails.forEach(nl => {
+      const m = new THREE.Mesh(sph, nailMat);
+      const yAx = new THREE.Vector3(nl.d[0], nl.d[1], nl.d[2]), zAx = new THREE.Vector3(-nl.n[0], -nl.n[1], -nl.n[2]), xAx = new THREE.Vector3().crossVectors(yAx, zAx).normalize();
+      zAx.crossVectors(xAx, yAx).normalize();
+      m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAx, yAx, zAx));
+      m.scale.set(nl.r * 0.74 * CM, nl.L * 0.38 * CM, 0.09 * CM);
+      m.position.set(nl.p[0] * CM, (nl.p[1] + 5.8) * CM, nl.p[2] * CM);
+      root.add(m);
+    });
+    // золотой рисунок: вертикально перед ладонью и пальцами
+    const ov = goldenOverlay(0.52, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.02, (10.5 + 5.8) * CM, 2.4 * CM); root.add(ov);
     const list = [];
     const top = makeLabel('Рука\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
