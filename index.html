@@ -10,16 +10,7 @@
 </style></head><body>
 <h1>🌻🌲🐚 Золотое сечение</h1>
 <p>Подсолнух, шишка и наутилус в дополненной реальности. Числа Фибоначчи и золотое сечение прямо на твоём столе.</p>
-<a id="main" class="b main" href="steam-fibonacci/ios.html">🍎 iPhone / iPad: поставить на стол</a>
-<a class="b" href="steam-fibonacci/table.html">🤖 Android (Chrome): поставить на стол</a>
-<a class="b" href="steam-fibonacci/index.html">📄 Любой телефон: через маркер на листе A4</a>
-<a class="b" href="steam-fibonacci/index.html?mode=3d">🧊 Без камеры: просто 3D</a>
+<a id="main" class="b main" href="steam-fibonacci/ios.html">🍎 Поставить на стол</a>
 <a class="b" href="qr.html">👩‍🏫 QR-код для класса</a>
-<script>
-  var ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var and = /Android/.test(ua), m = document.getElementById('main');
-  if (and) { m.href = 'steam-fibonacci/table.html'; m.textContent = '🤖 Поставить на стол (Android)'; }
-  else if (!ios) { m.href = 'steam-fibonacci/index.html?mode=3d'; m.textContent = '🧊 Открыть 3D-модели'; }
-  else { m.textContent = '🍎 Поставить на стол (iPhone / iPad)'; }
-</script>
+
 </body></html>

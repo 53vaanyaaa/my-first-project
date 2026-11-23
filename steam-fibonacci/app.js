@@ -337,8 +337,7 @@
       over.add(polyline([toW(b.x0, b.y0, Y), toW(b.x1, b.y0, Y), toW(b.x1, b.y1, Y), toW(b.x0, b.y1, Y)], '#ffd54a', 0.0035, true, true));
       const ap = []; for (let i = 0; i <= 24; i++) { const a = b.a0 + (b.a1 - b.a0) * i / 24; ap.push(toW(b.cx + b.s * Math.cos(a), b.cy + b.s * Math.sin(a), Y)); }
       over.add(tube(ap, '#ff4d6d', 0.0055, true));
-      const t = makeLabel(String(lay.F[k]), { fs: 64, h: 0.075, bg: false, color: '#ffe082' }); t.userData.flat = true;
-      t.position.copy(toW((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, Y)); over.add(t); list.push(t);
+      // числа на квадратах убраны — видна только золотая спираль
     }
     const maxH = rEnd * rho * hh * S;
     const group = new THREE.Group(); group.add(shell); group.add(over);
@@ -346,8 +345,7 @@
     for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }
     group.position.set(-((bx0 + bx1) / 2 - P[0]) * S, maxH + 0.005, ((by0 + by1) / 2 - P[1]) * S);
     root.add(group);
-    const top = makeLabel('Наутилус (разрез)\n13 : 8 = 1,625 ≈ φ', { fs: 48, h: 0.055 }); top.position.set(0, 0.98, 0); root.add(top); list.push(top);
-    const note = makeLabel('1 · 1 · 2 · 3 · 5 · 8 · 13', { fs: 44, h: 0.05 }); note.position.set(0, 0.86, 0); root.add(note); list.push(note);
+    const top = makeLabel('Наутилус\nзолотая спираль φ', { fs: 48, h: 0.055 }); top.position.set(0, 0.98, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
