@@ -308,7 +308,6 @@
     const list = [];
     const lbl = (t, p, op) => { const s = makeLabel(t, op); s.position.copy(p); head.add(s); list.push(s); return s; };
     const hl = (n) => V(pos[n][0], 0.12, pos[n][1]);
-    const top = makeLabel('Подсолнух\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
@@ -367,7 +366,6 @@
 
     const list = [];
     const lbl = (t, p, op) => { const s = makeLabel(t, op); s.position.copy(p); root.add(s); list.push(s); return s; };
-    lbl('Шишка\nзолотое сечение φ', V(0, 1.12, 0), { fs: 48, h: 0.055 });
     root.userData.labelList = list;
     return root;
   }
@@ -484,7 +482,6 @@
     for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }
     group.position.set(-((bx0 + bx1) / 2 - P[0]) * S, maxH + 0.005, ((by0 + by1) / 2 - P[1]) * S);
     root.add(group);
-    const top = makeLabel('Наутилус\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 0.98, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
@@ -535,7 +532,6 @@
     // золотой рисунок поверх цветка (центр спирали = центр розы)
     const ov = goldenOverlay(0.5, true); ov.position.y = 0.09; head.add(ov);
     const list = [];
-    const top = makeLabel('Роза\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.0, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
@@ -755,7 +751,6 @@
     // золотой рисунок: вертикально перед ладонью и пальцами
     const ov = goldenOverlay(0.52, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.02, (9.8 + 5.8) * CM, 2.4 * CM); root.add(ov);
     const list = [];
-    const top = makeLabel('Рука\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
