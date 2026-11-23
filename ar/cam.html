@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Золотое сечение · AR через камеру</title>
+<title>AR-модель</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;touch-action:none}
   video,canvas{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover}
@@ -22,6 +22,7 @@
 </style>
 <script src="lib/aframe.min.js"></script>
 <script src="app.js"></script>
+<script src="groups.js"></script>
 </head>
 <body>
 <video id="cam" playsinline muted autoplay></video>
@@ -41,6 +42,8 @@
 (function () {
   var THREE = AFRAME.THREE, M = window.FIBMODELS;
   var q = new URLSearchParams(location.search), cur = Math.max(0, Math.min(4, +(q.get('model') || 0)));
+  var K = q.get('k'), G = window.FIBGROUPS, lock = !!(K && G.codes[K] != null);   // ссылка группы: только одна модель
+  if (lock) { cur = G.codes[K]; document.getElementById('bottom').style.display = 'none'; document.querySelector('#top a').href = 'view.html?k=' + K; }
   var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
   document.body.appendChild(renderer.domElement);

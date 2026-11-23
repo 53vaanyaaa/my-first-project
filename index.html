@@ -1,16 +1,37 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>STEAM · Фибоначчи в AR</title>
+<title>Для учителя · QR-коды групп</title>
 <style>
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;box-sizing:border-box;background:#0b1020;color:#fff;font-family:-apple-system,system-ui,"Segoe UI",Roboto,Arial,sans-serif;text-align:center}
-  h1{margin:0 0 4px;font-size:24px} p{margin:0 0 8px;opacity:.85;max-width:360px;line-height:1.4}
-  a.b{display:block;width:100%;max-width:340px;box-sizing:border-box;padding:15px;border-radius:16px;background:#1a2447;color:#fff;text-decoration:none;font-weight:600;font-size:17px;border:1px solid #fff3}
-  a.b.main{background:#ffd54a;color:#1b1500;border-color:#ffd54a}
+  body{margin:0;background:#f4f5f8;color:#111;font-family:-apple-system,system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding:20px 16px 40px}
+  h1{margin:0 0 4px;font-size:24px} .lead{margin:0 0 18px;color:#444;max-width:760px;line-height:1.45}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .g{background:#fff;border-radius:18px;padding:16px;text-align:center;box-shadow:0 2px 10px #0001;break-inside:avoid}
+  .g h2{margin:0 0 2px;font-size:22px} .g .m{color:#666;margin-bottom:8px}
+  .g .qr svg{width:100%;max-width:230px;height:auto}
+  .g a{display:inline-block;margin-top:6px;font-size:13px;color:#2949c7;word-break:break-all}
+  .g button{margin-top:10px;padding:9px 14px;border-radius:12px;border:1px solid #bbb;background:#fff;font-size:14px}
+  #big{display:none;position:fixed;inset:0;background:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;gap:2vmin;cursor:pointer}
+  #big h2{font-size:7vmin;margin:0} #big .qr svg{width:72vmin;height:72vmin} #big small{font-size:2.6vmin;color:#666}
+  @media print{button,.lead{display:none} body{background:#fff} .g{box-shadow:none;border:1px solid #ddd}}
 </style></head><body>
-<h1>🌻🌲🐚 Золотое сечение</h1>
-<p>Подсолнух, шишка и наутилус в дополненной реальности. Числа Фибоначчи и золотое сечение прямо на твоём столе.</p>
-<a id="main" class="b main" href="steam-fibonacci/ios.html">📱 Поставить на стол</a>
-<a class="b" href="qr.html">👩‍🏫 QR-код для класса</a>
-
+<h1>👩‍🏫 QR-коды для групп</h1>
+<p class="lead">Каждая группа сканирует <b>свой</b> код и видит <b>только свою</b> модель (переключателя на другие модели нет). Подпись модели видите только вы: ученикам показывайте QR через «Показать крупно» — там только номер группы. Страницу можно распечатать.</p>
+<div id="grid"></div>
+<div id="big" title="Нажмите, чтобы закрыть"><h2></h2><div class="qr"></div><small>Наведи камеру телефона на код</small></div>
+<script src="ar/lib/qrcode.js"></script>
+<script src="ar/groups.js"></script>
+<script>
+  var G = window.FIBGROUPS, base = location.href.replace(/[?#].*$/, '').replace(/(index\.html|qr\.html)$/, '');
+  var codes = Object.keys(G.codes).sort(function (a, b) { return G.codes[a] - G.codes[b]; });
+  function svg(url) { var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 8, margin: 3, scalable: true }); }
+  var grid = document.getElementById('grid'), big = document.getElementById('big');
+  codes.forEach(function (k, n) {
+    var url = base + 'ar/view.html?k=' + k, d = document.createElement('div'); d.className = 'g';
+    d.innerHTML = '<h2>Группа ' + (n + 1) + '</h2><div class="m">' + G.names[G.codes[k]] + '</div><div class="qr">' + svg(url) + '</div><a href="' + url + '" target="_blank">' + url + '</a><br><button>Показать крупно</button>';
+    d.querySelector('button').onclick = function () { big.querySelector('h2').textContent = 'Группа ' + (n + 1); big.querySelector('.qr').innerHTML = svg(url); big.style.display = 'flex'; if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); };
+    grid.appendChild(d);
+  });
+  big.onclick = function () { big.style.display = 'none'; if (document.fullscreenElement) document.exitFullscreen(); };
+</script>
 </body></html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>STEAM · Фибоначчи в природе (AR)</title>
+<title>AR-модель</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#fff;touch-action:none}
   .ui{position:fixed;z-index:10}
@@ -26,10 +26,11 @@
 <script src="lib/aframe.min.js"></script>
 <script src="lib/aframe-ar.js"></script>
 <script src="app.js"></script>
+<script src="groups.js"></script>
 </head>
 <body>
 <div id="top" class="ui">
-  <h1>Фибоначчи</h1>
+  <h1>AR</h1>
   <div style="display:flex;gap:6px">
     <button class="chip" id="bLab">Подписи ✓</button>
     <a class="chip" href="ios.html" style="text-decoration:none;color:#fff">🍎</a>
@@ -77,6 +78,12 @@
     var f = window.FIB; if (!f) return; f.setLabels(!f.labelsOn); this.textContent = 'Подписи ' + (f.labelsOn ? '✓' : '✗');
   });
   document.getElementById('info').addEventListener('click',function(){this.classList.toggle('min')});
+  var K = q.get('k'), G = window.FIBGROUPS;
+  if (K && G.codes[K] != null) {   // ссылка группы: одна модель, без переключателей
+    q.set('model', G.codes[K]);
+    ['tabs', 'info'].forEach(function (id) { document.getElementById(id).style.display = 'none'; });
+    document.querySelectorAll('#top .chip').forEach(function (c) { if (c.id !== 'bLab') c.style.display = 'none'; });
+  }
   var m = q.get('model'); if (m != null) { var t = setInterval(function () { if (window.FIB) { window.FIB.show(+m); clearInterval(t); } }, 100); }
 })();
 </script>

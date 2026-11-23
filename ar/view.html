@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR-модель</title>
+<style>
+  body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 30%,#24305a,#0b1020 70%);color:#fff;font-family:-apple-system,system-ui,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px;box-sizing:border-box;text-align:center}
+  h1{font-size:22px;margin:8px 0 4px} p{opacity:.85;line-height:1.45;margin:0 0 16px;max-width:380px;font-size:15px}
+  .card{width:100%;max-width:420px;background:#131c3d;border:1px solid #ffffff22;border-radius:20px;padding:12px;box-sizing:border-box}
+  .card a.main{display:block;position:relative;text-decoration:none;color:#fff}
+  .card img{width:100%;border-radius:14px;display:block;background:#0e1a3a}
+  .btn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#ffd54a;color:#1b1500;font-weight:700;border-radius:22px;padding:12px 22px;font-size:17px;white-space:nowrap}
+  a.alt{display:block;margin:12px 2px 2px;color:#ffd54a;font-size:14px;text-decoration:none}
+  #warn{display:none;background:#5a2a1a;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:14px;max-width:420px}
+  #bad{display:none}
+</style>
+<script src="groups.js"></script>
+</head>
+<body>
+<h1>📱 Твоя модель</h1>
+<p>Нажми на картинку и наведи камеру на стол. Рассмотри модель со всех сторон: что за узор ты видишь?</p>
+<div id="warn"></div>
+<div class="card" id="card"><a class="main" id="lnk"><img id="img" alt="модель"><span class="btn">Показать на столе</span></a></div>
+<p id="bad">Ссылка неверная. Отсканируй QR-код группы ещё раз.</p>
+<script>
+  var K = new URLSearchParams(location.search).get('k'), G = window.FIBGROUPS, i = G.codes[K];
+  if (i == null) { document.getElementById('card').style.display = 'none'; document.getElementById('bad').style.display = 'block'; }
+  else {
+    var f = G.files[i], a = document.getElementById('lnk'), img = document.getElementById('img');
+    img.src = 'thumbs/' + f + '.jpg';
+    var ua = navigator.userAgent;
+    var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isAndroid = /Android/.test(ua);
+    var inApp = /Instagram|FBAN|FBAV|Telegram|WhatsApp|Line\/|VKClient|; wv\)/.test(ua) || (isIOS && (!/Safari\//.test(ua) || /CriOS|FxiOS|EdgiOS/.test(ua)));
+    var camUrl = new URL('cam.html?k=' + K, location.href).href, viewer = new URL('index.html?mode=3d&k=' + K, location.href).href;
+    if (isIOS) { a.setAttribute('rel', 'ar'); a.href = 'models/' + f + '.usdz'; }             // Apple AR Quick Look
+    else if (isAndroid) {
+      a.href = camUrl;                                                                          // AR через камеру — на любом Android
+      var glb = new URL('models/' + f + '.glb', location.href).href, g = document.createElement('a'); g.className = 'alt';
+      g.href = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(glb) + '&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(camUrl) + ';end;';
+      g.textContent = '🔎 Точный AR от Google (если телефон поддерживает ARCore)'; document.getElementById('card').appendChild(g);
+    } else a.href = viewer;                                                                     // компьютер — 3D
+    var w = document.getElementById('warn');
+    if (inApp) { w.innerHTML = '⚠️ AR не работает внутри мессенджера. Нажми <b>⋯</b> → <b>«Открыть в ' + (isIOS ? 'Safari' : 'Chrome') + '»</b>.'; w.style.display = 'block'; }
+  }
+</script>
+</body>
+</html>
