@@ -124,6 +124,8 @@
       pos.push([x, z, y]);
     }
     head.add(seeds);
+    // золотой рисунок на корзинке (центр спирали = центр цветка)
+    const ovS = goldenOverlay(0.56, true); ovS.position.y = 0.075; head.add(ovS);
 
     // зелёная «корзинка» и обёртка из 21 чашелистика
     const back = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.012, R * 0.55, 0.07, 48), pbr('#4d722b', 0.75));
@@ -208,6 +210,8 @@
       if (n === 13 * Math.floor((N - 1) / 13)) marks.pb = tip;
     }
     root.add(body); root.add(apo); root.add(umbo);
+    // золотой рисунок спереди шишки
+    const ovC = goldenOverlay(0.46, false); ovC.rotation.x = Math.PI / 2; ovC.position.set(0, Y0 + H * 0.45, Rm * 0.95); root.add(ovC);
 
     const list = [];
     const lbl = (t, p, op) => { const s = makeLabel(t, op); s.position.copy(p); root.add(s); list.push(s); return s; };
@@ -336,19 +340,116 @@
     return root;
   }
 
+  /* ---------- «Золотой рисунок»: квадраты Фибоначчи + золотая спираль (как у наутилуса) ---------- */
+  // Плоский рисунок в плоскости XZ (y = 0). width — ширина по длинной стороне.
+  // centerOnPole: true — центр спирали в начале координат; иначе — центр прямоугольника.
+  function goldenOverlay(width, centerOnPole, show) {
+    const SHOW = show || 7, lay = goldenLayout(14), P = lay.pole;
+    let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
+    for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }
+    const S = width / Math.max(bx1 - bx0, by1 - by0);
+    const ox = centerOnPole ? P[0] : (bx0 + bx1) / 2, oy = centerOnPole ? P[1] : (by0 + by1) / 2;
+    const toW = (x, y) => V((x - ox) * S, 0, -(y - oy) * S);
+    const g = new THREE.Group(), th = Math.max(0.0035, width * 0.009);
+    for (let k = 0; k < SHOW; k++) {
+      const b = lay.sq[k];
+      g.add(polyline([toW(b.x0, b.y0), toW(b.x1, b.y0), toW(b.x1, b.y1), toW(b.x0, b.y1)], '#ffd54a', th * 0.65, true, true));
+      const ap = []; for (let i = 0; i <= 24; i++) { const a = b.a0 + (b.a1 - b.a0) * i / 24; ap.push(toW(b.cx + b.s * Math.cos(a), b.cy + b.s * Math.sin(a))); }
+      g.add(tube(ap, '#ff4d6d', th, true));
+    }
+    return g;
+  }
+
+  /* ---------- 4. РОЗА ---------- */
+  function buildRose() {
+    const root = new THREE.Group();
+    const head = new THREE.Group(); head.position.set(0, 0.52, 0); head.rotation.x = 0.35; root.add(head);
+    // Лепестки по золотому углу 137.5°: внутренние маленькие и сомкнутые, внешние большие и раскрытые
+    const N = 34;
+    for (let i = 0; i < N; i++) {
+      const f = i / (N - 1), a = i * GA;
+      const len = 0.07 + 0.17 * Math.pow(f, 0.8), wid = len * (0.95 + 0.25 * f);
+      const geo = bladeGeo(len, wid, -0.02 + 0.07 * f * f, wid * (0.42 - 0.22 * f), 0.72);
+      const hex = '#' + new THREE.Color().setHSL(0.985 + rnd(i) * 0.01, 0.85, 0.22 + 0.16 * f + rnd(i + 5) * 0.04).getHexString();
+      const m = new THREE.Mesh(geo, pbr(hex, 0.5, 0, true));
+      const o = new THREE.Group(); o.rotation.set(0, -a, 1.35 - 1.05 * Math.pow(f, 0.7), 'YZX');
+      m.position.x = 0.01 + 0.04 * f; o.add(m); o.position.y = -0.02 * f; head.add(o);
+    }
+    // чашелистики, стебель, листья
+    const sep = bladeGeo(0.13, 0.04, 0.09, 0.004, 0.4);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, o = new THREE.Group(); o.rotation.set(0, -a, -0.25, 'YZX'); o.position.y = -0.04; o.add(new THREE.Mesh(sep, pbr('#2f5e22', 0.8, 0, true))); head.add(o); }
+    const recept = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), pbr('#3d6b26', 0.75)); recept.position.y = -0.05; head.add(recept);
+    const stemPts = [V(0, 0, 0), V(-0.015, 0.18, 0.01), V(0.01, 0.36, -0.01), V(0, 0.48, -0.02)];
+    root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 24, 0.013, 8, false), pbr('#3e6e28', 0.7)));
+    const leaf = bladeGeo(0.12, 0.075, 0.03, 0.008, 0.45);
+    [[0.17, 0.4], [0.3, Math.PI + 0.3]].forEach(([h, ry]) => { const g = new THREE.Group(); g.position.set(0, h, 0); g.rotation.set(0, ry, 0.5); g.add(new THREE.Mesh(leaf, pbr('#2f6a24', 0.65, 0, true))); root.add(g); });
+    // золотой рисунок поверх цветка (центр спирали = центр розы)
+    const ov = goldenOverlay(0.5, true); ov.position.y = 0.09; head.add(ov);
+    const list = [];
+    const top = makeLabel('Роза\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.0, 0); root.add(top); list.push(top);
+    root.userData.labelList = list;
+    return root;
+  }
+
+  /* ---------- 5. РУКА ---------- */
+  function buildHand() {
+    const root = new THREE.Group();
+    const skin = pbr('#e2ae8c', 0.55), nail = pbr('#f3d2c4', 0.3);
+    const hand = new THREE.Group(); hand.position.set(0, 0.06, 0); root.add(hand);
+    // ладонь и запястье
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); palm.scale.set(0.17, 0.2, 0.06); palm.position.y = 0.32; hand.add(palm);
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.24, 20), skin); wrist.scale.z = 0.55; wrist.position.y = 0.1; hand.add(wrist);
+    const sph = new THREE.SphereGeometry(1, 14, 10);
+    // палец: фаланги длиной d, d·φ, d·φ² — каждая следующая в φ раз длиннее
+    function finger(x, y, d, r, splay, curl) {
+      let g = new THREE.Group(); g.position.set(x, y, 0); g.rotation.z = splay; hand.add(g);
+      const lens = [d * PHI * PHI, d * PHI, d];
+      lens.forEach((L, k) => {
+        const rr = r * (1 - 0.1 * k);
+        const j = new THREE.Mesh(sph, skin); j.scale.setScalar(rr * 1.05); g.add(j);
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 12), skin); c.position.y = L / 2; g.add(c);
+        const n = new THREE.Group(); n.position.y = L; n.rotation.x = curl; g.add(n); g = n;
+        if (k === 2) { const tip = new THREE.Mesh(sph, skin); tip.scale.setScalar(rr * 0.92); g.add(tip);
+          const nl = new THREE.Mesh(sph, nail); nl.scale.set(rr * 0.75, rr * 0.9, rr * 0.25); nl.position.set(0, -rr * 0.6, -rr * 0.75); g.add(nl); }
+      });
+    }
+    finger(-0.11, 0.48, 0.042, 0.026, 0.12, -0.12);   // мизинец
+    finger(-0.04, 0.51, 0.052, 0.029, 0.03, -0.1);    // безымянный
+    finger(0.035, 0.52, 0.056, 0.03, -0.02, -0.1);    // средний
+    finger(0.11, 0.5, 0.052, 0.029, -0.1, -0.1);      // указательный
+    // большой палец
+    (function () {
+      let g = new THREE.Group(); g.position.set(0.15, 0.24, 0.01); g.rotation.set(0, 0, -0.85); hand.add(g);
+      [0.09, 0.065, 0.045].forEach((L, k) => {
+        const rr = 0.034 * (1 - 0.08 * k), j = new THREE.Mesh(sph, skin); j.scale.setScalar(rr); g.add(j);
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 12), skin); c.position.y = L / 2; g.add(c);
+        const n = new THREE.Group(); n.position.y = L; n.rotation.z = 0.2; g.add(n); g = n;
+        if (k === 2) { const tip = new THREE.Mesh(sph, skin); tip.scale.setScalar(rr * 0.9); g.add(tip); }
+      });
+    })();
+    // золотой рисунок: вертикально, поверх ладони и пальцев
+    const ov = goldenOverlay(0.5, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.0, 0.55, 0.08); hand.add(ov);
+    const list = [];
+    const top = makeLabel('Рука\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
+    root.userData.labelList = list;
+    return root;
+  }
+
   /* ---------- компонент сцены ---------- */
   const INFO = [
     { icon: '🌻', name: 'Подсолнух', html: '' },
     { icon: '🌲', name: 'Шишка', html: '' },
-    { icon: '🐚', name: 'Наутилус', html: '' }
+    { icon: '🐚', name: 'Наутилус', html: '' },
+    { icon: '🌹', name: 'Роза', html: '' },
+    { icon: '✋', name: 'Рука', html: '' }
   ];
 
-  window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus], INFO: INFO };
+  window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus, buildRose, buildHand], INFO: INFO };
 
   AFRAME.registerComponent('fib-app', {
     init: function () {
       this.inAR = this.el.parentNode && this.el.parentNode.tagName === 'A-MARKER';
-      this.models = [buildSunflower(), buildCone(), buildNautilus()];
+      this.models = [buildSunflower(), buildCone(), buildNautilus(), buildRose(), buildHand()];
       this.spin = new THREE.Group();              // вращается вокруг вертикали
       this.pitch = new THREE.Group();             // наклон пальцем
       this.pitch.add(this.spin);
@@ -367,7 +468,7 @@
     },
     show: function (i) {
       this.cur = i;
-      if (!this.inAR) { this.pit = [0.45, 0.2, 0.95][i]; this.userDrag = false; }
+      if (!this.inAR) { this.pit = [0.45, 0.2, 0.95, 0.55, 0.05][i]; this.userDrag = false; }
       this.models.forEach((m, k) => m.visible = k === i);
       this.setLabels(this.labelsOn);
       document.querySelectorAll('.tab').forEach((b, k) => b.classList.toggle('on', k === i));
