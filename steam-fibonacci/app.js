@@ -674,11 +674,13 @@
       { mcp: [-1.0, 9.65, -0.2], yaw: -3 * deg, sc: 0.96, r: 0.95 },   // безымянный
       { mcp: [-2.7, 8.75, -0.1], yaw: -8 * deg, sc: 0.76, r: 0.84 }    // мизинец
     ];
-    const D = 1.85;
+    const D = 1.95;
+    const PY = 0.86;                           // ладонь короче: пальцы ≈ 43% длины кисти, как у реальной руки
+    fingers.forEach(f => { f.mcp[1] *= PY; });
     fingers.forEach((f, i) => chain(f.mcp, f.yaw, [9 * deg, (14 + i * 2) * deg, 9 * deg], [D * PH * PH * f.sc, D * PH * f.sc, D * f.sc], [f.r, f.r * 0.91, f.r * 0.83, f.r * 0.76]));
     // большой палец: пясть отходит у запястья, смотрит вверх-наружу и к ладони
     (function () {
-      const base = [2.5, 1.9, 0.5];
+      const base = [2.5, 1.9 * PY, 0.5];
       const dirs = [[40, 18], [28, 14], [20, 10]], L = [4.4, 3.1, 2.6], R = [1.38, 1.14, 1.02, 0.9];
       let p = base;
       dirs.forEach(([yw, pt], k) => {
@@ -700,12 +702,15 @@
       [[-2.5, 3.9, 0.55], [1.35, 3.1, 1.05]],  // возвышение мизинца
       [[0.0, 8.75, 0.55], [3.75, 1.15, 0.9]]   // подушечки под пальцами
     ];
+    meta.forEach(m => { m[0][1] *= PY; m[1][1] *= PY; });
+    palmEll.forEach(e => { e[0][1] *= PY; e[1][1] *= PY; });
     // линии ладони: сердца, ума, жизни (лёгкие бороздки)
     const lines = [
       [[-3.8, 7.7], [-1.5, 7.9], [0.6, 8.1], [2.1, 8.6]],
       [[3.0, 6.3], [1.0, 5.9], [-1.2, 5.6], [-2.9, 5.2]],
       [[2.9, 6.5], [1.5, 5.0], [0.9, 3.3], [1.2, 1.4]]
     ];
+    lines.forEach(L => L.forEach(p => { p[1] *= PY; }));
     const lineDist = (x, y, L) => { let m = 1e9; for (let i = 0; i < L.length - 1; i++) { const a = L[i], b = L[i + 1], bx = b[0] - a[0], by = b[1] - a[1]; let h = ((x - a[0]) * bx + (y - a[1]) * by) / (bx * bx + by * by); h = Math.max(0, Math.min(1, h)); m = Math.min(m, Math.hypot(x - a[0] - bx * h, y - a[1] - by * h)); } return m; };
     function sdf(x, y, z) {
       let d = sdSeg(x, y, z, [0, -5.5, 0.15], [0, 0.6, 0.15], 2.75, 2.85, 1.38);    // предплечье и запястье (сплющено)
@@ -724,7 +729,7 @@
         if (side > 0.25) d += 0.055 * Math.exp(-Math.pow(al / 0.11, 2)) * Math.min(1, (side - 0.25) * 3);
         else if (side < -0.3) d += 0.014 * (Math.exp(-Math.pow((al - 0.17) / 0.06, 2)) + Math.exp(-Math.pow(al / 0.06, 2)) + Math.exp(-Math.pow((al + 0.17) / 0.06, 2))) * Math.min(1, (-side - 0.3) * 3);
       }
-      if (z > 0.6 && y > 0.8 && y < 9.2) { let m = 1e9; for (const L of lines) m = Math.min(m, lineDist(x, y, L)); d += 0.09 * Math.exp(-Math.pow(m / 0.13, 2)); }
+      if (z > 0.6 && y > 0.7 && y < 8.0) { let m = 1e9; for (const L of lines) m = Math.min(m, lineDist(x, y, L)); d += 0.09 * Math.exp(-Math.pow(m / 0.13, 2)); }
       return d;
     }
     const geo = surfaceNets(sdf, [-5.2, -5.8, -3.2], [8.6, 19.8, 5.2], 0.14);
@@ -748,7 +753,7 @@
       root.add(m);
     });
     // золотой рисунок: вертикально перед ладонью и пальцами
-    const ov = goldenOverlay(0.52, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.02, (10.5 + 5.8) * CM, 2.4 * CM); root.add(ov);
+    const ov = goldenOverlay(0.52, false); ov.rotation.x = Math.PI / 2; ov.position.set(0.02, (9.8 + 5.8) * CM, 2.4 * CM); root.add(ov);
     const list = [];
     const top = makeLabel('Рука\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
