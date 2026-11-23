@@ -49,10 +49,9 @@
 (function () {
   var q = new URLSearchParams(location.search), is3d = q.get('mode') === '3d';
   // «кинематографичный» свет: тёплый ключевой, холодный контровой, мягкое небо
-  var lights = '<a-entity light="type:hemisphere;color:#e6eeff;groundColor:#3a2c1c;intensity:0.6"></a-entity>' +
-               '<a-entity light="type:ambient;color:#ffffff;intensity:0.18"></a-entity>' +
-               '<a-entity light="type:directional;color:#fff0d8;intensity:1.05" position="-1.2 2.6 1.8"></a-entity>' +
-               '<a-entity light="type:directional;color:#9cc2ff;intensity:0.6" position="1.6 1.2 -2.2"></a-entity>';
+  // мягкое небо + холодный контровой; тёплый ключевой свет с тенью добавляет сама сцена
+  var lights = '<a-entity light="type:hemisphere;color:#e6eeff;groundColor:#3a2c1c;intensity:0.35"></a-entity>' +
+               '<a-entity light="type:directional;color:#9cc2ff;intensity:0.5" position="1.6 1.2 -2.2"></a-entity>';
   var scene;
   if (is3d) {
     scene = '<a-scene embedded vr-mode-ui="enabled:false" renderer="alpha:true;antialias:true">' + lights +

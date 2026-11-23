@@ -36,7 +36,7 @@
     ctx.fillStyle = o.color || '#ffffff';
     if (plain) { ctx.shadowColor = 'rgba(0,0,0,.9)'; ctx.shadowBlur = 8; }
     lines.forEach((l, i) => ctx.fillText(l, c.width / 2, py + lh * (i + 0.5)));
-    const tex = new THREE.CanvasTexture(c);
+    const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true }));
     const k = worldH * LS / lh;
     sp.scale.set(c.width * k, c.height * k, 1);
@@ -79,6 +79,156 @@
     if (!matCache[k]) matCache[k] = new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: metal || 0, side: double ? THREE.DoubleSide : THREE.FrontSide });
     return matCache[k];
   }
+  /* ---------- процедурные текстуры (рисуются кодом, без файлов) ---------- */
+  function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function toTex(c, srgb) {
+    const t = new THREE.CanvasTexture(c);
+    if (srgb) t.encoding = THREE.sRGBEncoding;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+    return t;
+  }
+  // карта нормалей (рельеф) из карты высот: светлое = выпуклое
+  function normalFrom(hc, strength) {
+    const w = hc.width, h = hc.height, src = hc.getContext('2d').getImageData(0, 0, w, h).data;
+    const c = mkCanvas(w, h), x = c.getContext('2d'), out = x.createImageData(w, h);
+    const H = (i, j) => src[(((j + h) % h) * w + ((i + w) % w)) * 4] / 255;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const dx = (H(i + 1, j) - H(i - 1, j)) * strength, dy = (H(i, j + 1) - H(i, j - 1)) * strength;
+      const l = Math.hypot(dx, dy, 1), k = (j * w + i) * 4;
+      out.data[k] = (-dx / l * 0.5 + 0.5) * 255; out.data[k + 1] = (dy / l * 0.5 + 0.5) * 255; out.data[k + 2] = (1 / l * 0.5 + 0.5) * 255; out.data[k + 3] = 255;
+    }
+    x.putImageData(out, 0, 0);
+    return toTex(c, false);
+  }
+  // прожилки лепестка/листа: веер линий от основания (низ холста) к кончику (верх)
+  function veins(x, w, h, n, style, lw, midrib) {
+    x.strokeStyle = style; x.lineCap = 'round';
+    for (let k = 0; k < n; k++) {
+      const f = (k + 0.5) / n - 0.5, sx = w / 2 + f * w * 0.12, ex = w / 2 + f * w * 0.95;
+      x.lineWidth = lw * (1 - Math.abs(f)); x.beginPath(); x.moveTo(sx, h);
+      x.bezierCurveTo(sx + f * w * 0.3, h * 0.6, ex, h * 0.35, ex * 0.9 + w * 0.05, h * 0.06); x.stroke();
+    }
+    if (midrib) { x.lineWidth = lw * 2.2; x.beginPath(); x.moveTo(w / 2, h); x.lineTo(w / 2, h * 0.04); x.stroke(); }
+  }
+  function speckle(x, w, h, n, style, r) { x.fillStyle = style; for (let i = 0; i < n; i++) { x.beginPath(); x.arc(rnd(i * 3.1) * w, rnd(i * 7.7) * h, r * (0.4 + rnd(i * 1.3)), 0, 7); x.fill(); } }
+
+  const TEXC = {};
+  function T(kind) {
+    if (TEXC[kind]) return TEXC[kind];
+    let map, hc, str = 3;
+    if (kind === 'sunPetal') {
+      map = mkCanvas(256, 512); const x = map.getContext('2d');
+      const g = x.createLinearGradient(0, 512, 0, 0); g.addColorStop(0, '#a84400'); g.addColorStop(0.25, '#e67e00'); g.addColorStop(0.7, '#ffae00'); g.addColorStop(1, '#ffc414');
+      x.fillStyle = g; x.fillRect(0, 0, 256, 512);
+      veins(x, 256, 512, 11, 'rgba(160,80,0,0.35)', 3, false);
+      speckle(x, 256, 512, 400, 'rgba(255,240,180,0.08)', 2);
+      hc = mkCanvas(256, 512); const y = hc.getContext('2d'); y.fillStyle = '#fff'; y.fillRect(0, 0, 256, 512); veins(y, 256, 512, 11, 'rgba(0,0,0,0.7)', 5, false);
+    } else if (kind === 'rose') {
+      map = mkCanvas(256, 512); const x = map.getContext('2d');
+      const g = x.createLinearGradient(0, 512, 0, 0); g.addColorStop(0, '#140003'); g.addColorStop(0.3, '#4a020c'); g.addColorStop(0.75, '#820818'); g.addColorStop(1, '#9e1024');
+      x.fillStyle = g; x.fillRect(0, 0, 256, 512);
+      const e = x.createLinearGradient(0, 0, 256, 0); e.addColorStop(0, 'rgba(255,60,80,0.14)'); e.addColorStop(0.5, 'rgba(0,0,0,0.15)'); e.addColorStop(1, 'rgba(255,60,80,0.14)');
+      x.fillStyle = e; x.fillRect(0, 0, 256, 512);
+      veins(x, 256, 512, 9, 'rgba(40,0,8,0.12)', 2, false);
+      speckle(x, 256, 512, 1500, 'rgba(255,120,140,0.04)', 1.2);   // «бархат»
+      hc = mkCanvas(256, 512); const y = hc.getContext('2d'); y.fillStyle = '#fff'; y.fillRect(0, 0, 256, 512); veins(y, 256, 512, 9, 'rgba(0,0,0,0.3)', 3, false); str = 1.2;
+    } else if (kind === 'leaf') {
+      map = mkCanvas(256, 512); const x = map.getContext('2d');
+      const g = x.createLinearGradient(0, 512, 0, 0); g.addColorStop(0, '#2b5a1c'); g.addColorStop(0.5, '#3f7d2a'); g.addColorStop(1, '#4f8f34');
+      x.fillStyle = g; x.fillRect(0, 0, 256, 512);
+      veins(x, 256, 512, 14, 'rgba(170,220,120,0.35)', 2.5, true);
+      hc = mkCanvas(256, 512); const y = hc.getContext('2d'); y.fillStyle = '#777'; y.fillRect(0, 0, 256, 512); veins(y, 256, 512, 14, 'rgba(255,255,255,0.9)', 4, true);
+    } else if (kind === 'wood') {          // серая детализация: оттенок задаёт цвет чешуйки
+      map = mkCanvas(512, 512); const x = map.getContext('2d'); x.fillStyle = '#e6e6e6'; x.fillRect(0, 0, 512, 512);
+      hc = mkCanvas(512, 512); const y = hc.getContext('2d'); y.fillStyle = '#888'; y.fillRect(0, 0, 512, 512);
+      for (let k = 0; k < 90; k++) {
+        const yy = rnd(k) * 512, a = 3 + rnd(k + 9) * 6, f = 0.01 + rnd(k + 4) * 0.02, dark = 120 + rnd(k + 2) * 90;
+        x.strokeStyle = 'rgba(' + [dark, dark * 0.95, dark * 0.9].map(Math.round) + ',0.55)'; x.lineWidth = 1 + rnd(k + 5) * 3;
+        y.strokeStyle = 'rgba(0,0,0,0.5)'; y.lineWidth = x.lineWidth;
+        [x, y].forEach(cx => { cx.beginPath(); for (let i = 0; i <= 512; i += 8) { const v = yy + Math.sin(i * f + k) * a; i ? cx.lineTo(i, v) : cx.moveTo(i, v); } cx.stroke(); });
+      }
+      speckle(x, 512, 512, 900, 'rgba(90,70,50,0.12)', 2);
+    } else if (kind === 'skin') {
+      map = mkCanvas(512, 512); const x = map.getContext('2d'); x.fillStyle = '#f4f4f4'; x.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 160; i++) { const r = 20 + rnd(i) * 60, g = x.createRadialGradient(rnd(i * 2) * 512, rnd(i * 5) * 512, 0, rnd(i * 2) * 512, rnd(i * 5) * 512, r); g.addColorStop(0, rnd(i * 9) > 0.5 ? 'rgba(220,120,110,0.07)' : 'rgba(255,230,210,0.07)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 512, 512); }
+      speckle(x, 512, 512, 1200, 'rgba(160,100,90,0.06)', 1.3);
+      hc = mkCanvas(512, 512); const y = hc.getContext('2d'); y.fillStyle = '#fff'; y.fillRect(0, 0, 512, 512); speckle(y, 512, 512, 2600, 'rgba(0,0,0,0.35)', 1.2); str = 1.5;
+    } else if (kind === 'shell') {          // раковина: кремовая с «языками пламени», к устью полосы исчезают
+      map = mkCanvas(2048, 256); const x = map.getContext('2d');
+      const g = x.createLinearGradient(0, 0, 2048, 0); g.addColorStop(0, '#e9dcc6'); g.addColorStop(1, '#f7efe2'); x.fillStyle = g; x.fillRect(0, 0, 2048, 256);
+      for (let k = 0; k < 22; k++) {
+        const cx = Math.pow((k + 0.5) / 22, 0.8) * 2048, fade = Math.min(1, Math.max(0, (2010 - cx) / 160));
+        if (fade <= 0) continue;
+        x.fillStyle = 'rgba(150,62,22,' + (0.85 * fade).toFixed(3) + ')'; x.beginPath();
+        const wd = 28 + rnd(k) * 20;
+        for (let yy = 0; yy <= 256; yy += 8) x.lineTo(cx + Math.sin(yy * 0.05 + k) * 16 + (yy - 128) * 0.25, yy);
+        for (let yy = 256; yy >= 0; yy -= 8) x.lineTo(cx + wd * (0.5 + 0.5 * Math.sin(yy * 0.02 + k * 2)) + Math.sin(yy * 0.05 + k) * 16 + (yy - 128) * 0.25, yy);
+        x.fill();
+      }
+      for (let i = 0; i < 2048; i += 6) { x.fillStyle = 'rgba(120,90,60,' + (0.03 + rnd(i) * 0.05).toFixed(3) + ')'; x.fillRect(i, 0, 1, 256); }   // линии роста
+      hc = mkCanvas(1024, 128); const y = hc.getContext('2d'); y.fillStyle = '#888'; y.fillRect(0, 0, 1024, 128);
+      for (let i = 0; i < 1024; i += 3) { y.fillStyle = 'rgba(255,255,255,' + (0.1 + rnd(i) * 0.25).toFixed(3) + ')'; y.fillRect(i, 0, 1, 128); } str = 1.2;
+    } else if (kind === 'nacre') {          // перламутр: пастельные переливы
+      map = mkCanvas(512, 512); const x = map.getContext('2d'); x.fillStyle = '#efe7df'; x.fillRect(0, 0, 512, 512);
+      for (let k = 0; k < 40; k++) {
+        x.strokeStyle = 'hsla(' + Math.round(rnd(k) * 360) + ',55%,82%,0.22)'; x.lineWidth = 6 + rnd(k + 3) * 18;
+        x.beginPath(); const yy = rnd(k + 7) * 512; for (let i = 0; i <= 512; i += 16) { const v = yy + Math.sin(i * 0.02 + k) * 22; i ? x.lineTo(i, v) : x.moveTo(i, v); } x.stroke();
+      }
+    }
+    TEXC[kind] = { map: toTex(map, true), normal: hc ? normalFrom(hc, str) : null };
+    return TEXC[kind];
+  }
+  const texMatCache = {};
+  function texMat(kind, tint, rough, double, extra) {
+    const key = kind + tint + rough + double + JSON.stringify(extra || {});
+    if (texMatCache[key]) return texMatCache[key];
+    const t = T(kind), P = extra && extra.clearcoat ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
+    const m = new P(Object.assign({ map: t.map, color: tint, roughness: rough, metalness: 0, side: double ? THREE.DoubleSide : THREE.FrontSide }, extra || {}));
+    if (t.normal) { m.normalMap = t.normal; m.normalScale = new THREE.Vector2(0.7, 0.7); }
+    return (texMatCache[key] = m);
+  }
+
+  /* ---------- «кинематограф» для сайта: тональная кривая, студийные отражения, тени ---------- */
+  const srgb2lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  function linearize(root) {   // цвета задаются в sRGB; при sRGB-выводе их надо перевести в линейные
+    const seen = new Set();
+    root.traverse(o => {
+      const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      mats.forEach(m => { if (seen.has(m)) return; seen.add(m); if (m.color) m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear(); if (m.map) m.map.encoding = THREE.sRGBEncoding; m.needsUpdate = true; });
+      if (o.isInstancedMesh && o.instanceColor && !seen.has(o.instanceColor)) { seen.add(o.instanceColor); const a = o.instanceColor.array; for (let i = 0; i < a.length; i++) a[i] = srgb2lin(a[i]); o.instanceColor.needsUpdate = true; }
+      if (o.isMesh && !o.isInstancedMesh && o.material && !o.material.depthTest === false) {}
+    });
+  }
+  function setupCinematic(renderer, scene) {
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // студия: небо-градиент + тёплый софтбокс + холодный контровой
+    const env = new THREE.Scene(), geo = new THREE.SphereGeometry(10, 32, 16), cols = [], p = geo.attributes.position;
+    const top = new THREE.Color('#8fa8d8'), mid = new THREE.Color('#e8dcc8'), bot = new THREE.Color('#2a221c'), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) { const y = p.getY(i) / 10; if (y > 0) c.copy(mid).lerp(top, y); else c.copy(mid).lerp(bot, -y); cols.push(c.r * 0.32, c.g * 0.32, c.b * 0.32); }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    env.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true })));
+    const box = (w, h, col, pos) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide })); m.position.set(pos[0], pos[1], pos[2]); m.lookAt(0, 0, 0); env.add(m); };
+    box(5, 4, new THREE.Color(3.2, 2.9, 2.5), [-4, 6, 5]);
+    box(3, 6, new THREE.Color(1.2, 1.5, 2.2), [6, 3, -5]);
+    box(8, 2, new THREE.Color(0.9, 0.9, 0.9), [0, 9, 0]);
+    const pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(env, 0.035).texture;
+  }
+  function addShadowRig(parent) {   // ключевой свет с мягкой тенью + «ловец тени» на столе
+    const key = new THREE.DirectionalLight(0xfff0dc, 1.6);
+    key.position.set(-1.2, 2.6, 1.8); key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02;
+    Object.assign(key.shadow.camera, { left: -1, right: 1, top: 1.6, bottom: -0.6, near: 0.1, far: 8 });
+    const tgt = new THREE.Object3D(); parent.add(tgt); key.target = tgt; parent.add(key);
+    const catcher = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: 0.38 }));
+    catcher.rotation.x = -Math.PI / 2; catcher.position.y = 0.001; catcher.receiveShadow = true; parent.add(catcher);
+  }
+  function enableShadows(root) {
+    root.traverse(o => { if (o.isMesh) { const onTop = o.material && o.material.depthTest === false; o.castShadow = !onTop && !o.isSprite; o.receiveShadow = !onTop; } });
+  }
+
   // Лепесток / лист: заострённый эллипс вдоль +X, изогнут вниз (droop) и «лодочкой» (cup)
   function bladeGeo(len, wid, droop, cup, belly) {
     const k = belly == null ? 0.6 : belly, s = new THREE.Shape();
@@ -89,6 +239,7 @@
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), y = p.getY(i), t = y / len, w = x / (wid * 0.5);
       p.setXYZ(i, y, -droop * t * t + cup * w * w * Math.sin(Math.PI * Math.min(1, t * 1.05)), x);
+      g.attributes.uv.setXY(i, x / wid + 0.5, t);
     }
     g.computeVertexNormals();
     return g;
@@ -104,7 +255,7 @@
 
     // Семена по формуле Фогеля: радиус ~ √n, поворот n·137.5°. 610 — число Фибоначчи
     const N = 610, R = 0.34, c = R / Math.sqrt(N);
-    const seeds = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 6), new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.05 }), N);
+    const seeds = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 5), new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.05 }), N);
     const o = new THREE.Object3D(), col = new THREE.Color(), pos = [];
     const cG1 = new THREE.Color('#8a9a34'), cG2 = new THREE.Color('#55601e'), cS1 = new THREE.Color('#24160c'), cS2 = new THREE.Color('#4a2c16'), cF = new THREE.Color('#d0901e');
     for (let n = 0; n < N; n++) {
@@ -132,14 +283,14 @@
     back.position.y = -0.04; head.add(back);
     const bract = bladeGeo(0.1, 0.05, 0.06, 0.004, 0.45);
     for (let i = 0; i < 21; i++) {
-      const a = (i / 21) * Math.PI * 2 + 0.1, m = new THREE.Mesh(bract, pbr('#3d6a22', 0.8, 0, true));
+      const a = (i / 21) * Math.PI * 2 + 0.1, m = new THREE.Mesh(bract, texMat('leaf', '#a8c890', 0.75, true));
       m.position.set(Math.cos(a) * (R - 0.03), -0.06, Math.sin(a) * (R - 0.03)); m.rotation.y = -a; head.add(m);
     }
     // лепестки: 34 + 21 (числа Фибоначчи), изогнутые, с разными оттенками
     const pA = bladeGeo(0.165, 0.056, 0.04, 0.007), pB = bladeGeo(0.15, 0.052, 0.055, 0.006);
     const petal = (geo, a, rr, y, i) => {
-      const hex = '#' + new THREE.Color().setHSL(0.112 + rnd(i) * 0.022, 0.95, 0.5 + rnd(i + 99) * 0.07).getHexString();
-      const m = new THREE.Mesh(geo, pbr(hex, 0.55, 0, true));
+      const hex = '#' + new THREE.Color().setHSL(0.1 + Math.floor(rnd(i) * 5) / 4 * 0.03, 0.55, 0.8 + Math.floor(rnd(i + 99) * 5) / 4 * 0.15).getHexString();
+      const m = new THREE.Mesh(geo, texMat('sunPetal', hex, 0.55, true));
       m.position.set(Math.cos(a) * rr, y, Math.sin(a) * rr); m.rotation.y = -a + (rnd(i + 7) - 0.5) * 0.08; head.add(m);
     };
     for (let i = 0; i < 34; i++) petal(pA, (i / 34) * Math.PI * 2, R - 0.012, 0.0, i);
@@ -151,7 +302,7 @@
     const leaf = bladeGeo(0.21, 0.13, 0.07, 0.012, 0.42);
     [[0.15, 0], [0.27, Math.PI]].forEach(([h, ry], i) => {
       const g = new THREE.Group(); g.position.set(0, h, -0.01); g.rotation.set(0, ry + 0.3 * (i ? -1 : 1), 0.45);
-      g.add(new THREE.Mesh(leaf, pbr('#3c7428', 0.7, 0, true))); root.add(g);
+      g.add(new THREE.Mesh(leaf, texMat('leaf', '#ffffff', 0.62, true))); root.add(g);
     });
 
     const list = [];
@@ -183,8 +334,8 @@
 
     // чешуйка = деревянная пластина + ромбовидный кончик (апофиз) + тёмный «пупок»
     const sph = new THREE.SphereGeometry(1, 10, 7);
-    const body = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.85 }), N);
-    const apo = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.8 }), N);
+    const wt = T('wood'), body = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.85, map: wt.map, normalMap: wt.normal }), N);
+    const apo = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.78, map: wt.map, normalMap: wt.normal }), N);
     const umbo = new THREE.InstancedMesh(sph, new THREE.MeshStandardMaterial({ roughness: 0.9 }), N);
     const P = new THREE.Object3D(), m4 = new THREE.Matrix4(), m5 = new THREE.Matrix4(), q0 = new THREE.Quaternion(), col = new THREE.Color();
     const put = (im, n, off, sc) => { m4.compose(off, q0, sc); m5.multiplyMatrices(P.matrix, m4); im.setMatrixAt(n, m5); };
@@ -266,12 +417,12 @@
 
     // РАЗРЕЗ раковины (как на фото в учебниках): нижняя половина + перламутр внутри + перегородки камер
     function sweep(scale, colorFn) {
-      const pos = [], colr = [], idx = [], tmp = new THREE.Color();
+      const pos = [], colr = [], idx = [], uvs = [], tmp = new THREE.Color();
       for (let i = 0; i <= NU; i++) {
         const u = uStart + (uEnd - uStart) * i / NU, rr = cen(u)[2] * scale;
         for (let j = 0; j <= NV; j++) {
           const v = Math.PI + Math.PI * j / NV;
-          const w = pt(u, rr * Math.cos(v), rr * hh * Math.sin(v)); pos.push(w.x, w.y, w.z);
+          const w = pt(u, rr * Math.cos(v), rr * hh * Math.sin(v)); pos.push(w.x, w.y, w.z); uvs.push(i / NU, j / NV);
           if (colorFn) { colorFn(u, v, tmp); colr.push(tmp.r, tmp.g, tmp.b); }
         }
       }
@@ -279,18 +430,15 @@
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       if (colorFn) g.setAttribute('color', new THREE.Float32BufferAttribute(colr, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
       g.setIndex(idx); g.computeVertexNormals(); return g;
     }
     // снаружи: кремовая раковина с «тигровыми» полосами, к устью полосы исчезают
     const cream = new THREE.Color('#f4ead8'), stripe = new THREE.Color('#a24a1c');
-    const outer = sweep(1, (u, v, out) => {
-      const fade = Math.min(1, Math.max(0, (uEnd - 0.12 * Math.PI - u) / (0.8 * Math.PI)));
-      const st = Math.sin(u * 5.5 + 1.7 * Math.sin(v - Math.PI)) > 0.15 ? 1 : 0;
-      out.copy(cream).lerp(stripe, st * fade * 0.92);
-    });
+    const outer = sweep(1, null);
     const shell = new THREE.Group();
-    shell.add(new THREE.Mesh(outer, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.02, side: THREE.DoubleSide })));
-    const nacre = new THREE.MeshStandardMaterial({ color: '#ece2d6', roughness: 0.16, metalness: 0.35, side: THREE.DoubleSide });
+    shell.add(new THREE.Mesh(outer, texMat('shell', '#ffffff', 0.3, true, { clearcoat: 0.8, clearcoatRoughness: 0.12 })));
+    const nacre = texMat('nacre', '#ffffff', 0.14, true, { metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.05 });
     shell.add(new THREE.Mesh(sweep(IN, null), nacre));
     // срез стенки (кольцо между внешней и внутренней поверхностью) в плоскости разреза
     const rim = [], rimIdx = [];
@@ -314,7 +462,7 @@
       for (let j = 0; j < 12; j++) sIdx.push(base, base + 1 + j, base + 2 + j);
     }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); sg.setIndex(sIdx); sg.computeVertexNormals();
-    shell.add(new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: '#d9c7b2', roughness: 0.22, metalness: 0.3, side: THREE.DoubleSide })));
+    shell.add(new THREE.Mesh(sg, texMat('nacre', '#e2d4c4', 0.18, true, { metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 })));
     // сифон — трубочка, соединяющая камеры
     const sip = []; for (let u = uStart + 0.3; u < uLive; u += 0.15) { const c0 = cen(u); sip.push(toW(c0[0], c0[1], -c0[2] * 0.12)); }
     if (sip.length > 3) shell.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(sip), sip.length * 2, 0.0025, 6, false), pbr('#b98a5c', 0.5)));
@@ -370,19 +518,19 @@
       const f = i / (N - 1), a = i * GA;
       const len = 0.07 + 0.17 * Math.pow(f, 0.8), wid = len * (0.95 + 0.25 * f);
       const geo = bladeGeo(len, wid, -0.02 + 0.07 * f * f, wid * (0.42 - 0.22 * f), 0.72);
-      const hex = '#' + new THREE.Color().setHSL(0.985 + rnd(i) * 0.01, 0.85, 0.22 + 0.16 * f + rnd(i + 5) * 0.04).getHexString();
-      const m = new THREE.Mesh(geo, pbr(hex, 0.5, 0, true));
+      const hex = '#' + new THREE.Color().setHSL(0, 0.3, 0.6 + 0.4 * Math.round(f * 5) / 5).getHexString();
+      const m = new THREE.Mesh(geo, texMat('rose', hex, 0.72, true));
       const o = new THREE.Group(); o.rotation.set(0, -a, 1.35 - 1.05 * Math.pow(f, 0.7), 'YZX');
       m.position.x = 0.01 + 0.04 * f; o.add(m); o.position.y = -0.02 * f; head.add(o);
     }
     // чашелистики, стебель, листья
     const sep = bladeGeo(0.13, 0.04, 0.09, 0.004, 0.4);
-    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, o = new THREE.Group(); o.rotation.set(0, -a, -0.25, 'YZX'); o.position.y = -0.04; o.add(new THREE.Mesh(sep, pbr('#2f5e22', 0.8, 0, true))); head.add(o); }
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, o = new THREE.Group(); o.rotation.set(0, -a, -0.25, 'YZX'); o.position.y = -0.04; o.add(new THREE.Mesh(sep, texMat('leaf', '#9ab889', 0.75, true))); head.add(o); }
     const recept = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), pbr('#3d6b26', 0.75)); recept.position.y = -0.05; head.add(recept);
     const stemPts = [V(0, 0, 0), V(-0.015, 0.18, 0.01), V(0.01, 0.36, -0.01), V(0, 0.48, -0.02)];
     root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 24, 0.013, 8, false), pbr('#3e6e28', 0.7)));
     const leaf = bladeGeo(0.12, 0.075, 0.03, 0.008, 0.45);
-    [[0.17, 0.4], [0.3, Math.PI + 0.3]].forEach(([h, ry]) => { const g = new THREE.Group(); g.position.set(0, h, 0); g.rotation.set(0, ry, 0.5); g.add(new THREE.Mesh(leaf, pbr('#2f6a24', 0.65, 0, true))); root.add(g); });
+    [[0.17, 0.4], [0.3, Math.PI + 0.3]].forEach(([h, ry]) => { const g = new THREE.Group(); g.position.set(0, h, 0); g.rotation.set(0, ry, 0.5); g.add(new THREE.Mesh(leaf, texMat('leaf', '#d8e8d0', 0.6, true))); root.add(g); });
     // золотой рисунок поверх цветка (центр спирали = центр розы)
     const ov = goldenOverlay(0.5, true); ov.position.y = 0.09; head.add(ov);
     const list = [];
@@ -394,12 +542,14 @@
   /* ---------- 5. РУКА ---------- */
   function buildHand() {
     const root = new THREE.Group();
-    const skin = pbr('#e2ae8c', 0.55), nail = pbr('#f3d2c4', 0.3);
+    const skin = texMat('skin', '#e0a98a', 0.5, false, { clearcoat: 0.12, clearcoatRoughness: 0.5 }), nail = new THREE.MeshPhysicalMaterial({ color: '#f1cfc2', roughness: 0.25, clearcoat: 0.8, clearcoatRoughness: 0.1 });
+    skin.normalScale = new THREE.Vector2(0.35, 0.35);
     const hand = new THREE.Group(); hand.position.set(0, 0.06, 0); root.add(hand);
     // ладонь и запястье
-    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); palm.scale.set(0.17, 0.2, 0.06); palm.position.y = 0.32; hand.add(palm);
-    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.24, 20), skin); wrist.scale.z = 0.55; wrist.position.y = 0.1; hand.add(wrist);
-    const sph = new THREE.SphereGeometry(1, 14, 10);
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), skin); palm.scale.set(0.17, 0.2, 0.06); palm.position.y = 0.32; hand.add(palm);
+    [[0.085, 0.24, 0.03, 0.085, 0.11, 0.05], [-0.09, 0.25, 0.025, 0.07, 0.12, 0.045]].forEach(([px, py, pz, sx, sy, sz]) => { const mm = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), skin); mm.scale.set(sx, sy, sz); mm.position.set(px, py, pz); hand.add(mm); });
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.24, 32), skin); wrist.scale.z = 0.55; wrist.position.y = 0.1; hand.add(wrist);
+    const sph = new THREE.SphereGeometry(1, 24, 16);
     // палец: фаланги длиной d, d·φ, d·φ² — каждая следующая в φ раз длиннее
     function finger(x, y, d, r, splay, curl) {
       let g = new THREE.Group(); g.position.set(x, y, 0); g.rotation.z = splay; hand.add(g);
@@ -407,7 +557,7 @@
       lens.forEach((L, k) => {
         const rr = r * (1 - 0.1 * k);
         const j = new THREE.Mesh(sph, skin); j.scale.setScalar(rr * 1.05); g.add(j);
-        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 12), skin); c.position.y = L / 2; g.add(c);
+        const c = new THREE.Mesh(new THREE.CylinderGeometry(rr * 0.92, rr, L, 20), skin); c.position.y = L / 2; g.add(c);
         const n = new THREE.Group(); n.position.y = L; n.rotation.x = curl; g.add(n); g = n;
         if (k === 2) { const tip = new THREE.Mesh(sph, skin); tip.scale.setScalar(rr * 0.92); g.add(tip);
           const nl = new THREE.Mesh(sph, nail); nl.scale.set(rr * 0.75, rr * 0.9, rr * 0.25); nl.position.set(0, -rr * 0.6, -rr * 0.75); g.add(nl); }
@@ -444,7 +594,7 @@
     { icon: '✋', name: 'Рука', html: '' }
   ];
 
-  window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus, buildRose, buildHand], INFO: INFO };
+  window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus, buildRose, buildHand], INFO: INFO, linearize: linearize, setupCinematic: setupCinematic, addShadowRig: addShadowRig, enableShadows: enableShadows };
 
   AFRAME.registerComponent('fib-app', {
     init: function () {
@@ -455,9 +605,13 @@
       this.pitch.add(this.spin);
       this.models.forEach(m => { m.visible = false; this.spin.add(m); });
       this.el.object3D.add(this.pitch);
+      this.models.forEach(m => { linearize(m); enableShadows(m); });
+      addShadowRig(this.el.object3D);
+      const sceneEl = this.el.sceneEl, go = () => setupCinematic(sceneEl.renderer, sceneEl.object3D);
+      if (sceneEl.renderer) go(); else sceneEl.addEventListener('renderstart', go, { once: true });
       const sc = document.createElement('canvas'); sc.width = sc.height = 128;
       const sx = sc.getContext('2d'), gr = sx.createRadialGradient(64, 64, 0, 64, 64, 64);
-      gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.22)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      gr.addColorStop(0, 'rgba(0,0,0,0.3)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
       sx.fillStyle = gr; sx.fillRect(0, 0, 128, 128);
       const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
       shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.002; this.pitch.add(shadow);
