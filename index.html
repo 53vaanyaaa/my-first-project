@@ -10,13 +10,14 @@
   .g h2{margin:0 0 2px;font-size:22px} .g .m{color:#666;margin-bottom:8px}
   .g .qr svg{width:100%;max-width:230px;height:auto}
   .g a{display:inline-block;margin-top:6px;font-size:13px;color:#2949c7;word-break:break-all}
+  .g a.ans{display:inline-block;margin-left:6px;font-size:14px;color:#a0600a;text-decoration:none;font-weight:600}
   .g button{margin-top:10px;padding:9px 14px;border-radius:12px;border:1px solid #bbb;background:#fff;font-size:14px}
   #big{display:none;position:fixed;inset:0;background:#fff;z-index:10;flex-direction:column;align-items:center;justify-content:center;gap:2vmin;cursor:pointer}
   #big h2{font-size:7vmin;margin:0} #big .qr svg{width:72vmin;height:72vmin} #big small{font-size:2.6vmin;color:#666}
   @media print{button,.lead{display:none} body{background:#fff} .g{box-shadow:none;border:1px solid #ddd}}
 </style></head><body>
 <h1>👩‍🏫 QR-коды для групп</h1>
-<p class="lead">Каждая группа сканирует <b>свой</b> код и видит <b>только свою</b> модель (переключателя на другие модели нет). Подпись модели видите только вы: ученикам показывайте QR через «Показать крупно» — там только номер группы. Страницу можно распечатать.</p>
+<p class="lead">Каждая группа сканирует <b>свой</b> код и видит <b>только свою</b> модель (переключателя на другие модели нет). Подпись модели видите только вы: ученикам показывайте QR через «Показать крупно» — там только номер группы. Страницу можно распечатать.<br>Модели у учеников <b>без подсказок</b>. «🔑 Разгадка» открывает ту же модель с нарисованными золотыми квадратами и спиралью — для обсуждения в конце урока (ученикам эту ссылку не давайте).</p>
 <div id="grid"></div>
 <div id="big" title="Нажмите, чтобы закрыть"><h2></h2><div class="qr"></div><small>Наведи камеру телефона на код</small></div>
 <script src="ar/lib/qrcode.js"></script>
@@ -28,7 +29,7 @@
   var grid = document.getElementById('grid'), big = document.getElementById('big');
   codes.forEach(function (k, n) {
     var url = base + 'ar/view.html?k=' + k, d = document.createElement('div'); d.className = 'g';
-    d.innerHTML = '<h2>Группа ' + (n + 1) + '</h2><div class="m">' + G.names[G.codes[k]] + '</div><div class="qr">' + svg(url) + '</div><a href="' + url + '" target="_blank">' + url + '</a><br><button>Показать крупно</button>';
+    d.innerHTML = '<h2>Группа ' + (n + 1) + '</h2><div class="m">' + G.names[G.codes[k]] + '</div><div class="qr">' + svg(url) + '</div><a href="' + url + '" target="_blank">' + url + '</a><br><button>Показать крупно</button> <a class="ans" href="' + url + '&a=1" target="_blank">🔑 Разгадка</a>';
     d.querySelector('button').onclick = function () { big.querySelector('h2').textContent = 'Группа ' + (n + 1); big.querySelector('.qr').innerHTML = svg(url); big.style.display = 'flex'; if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); };
     grid.appendChild(d);
   });

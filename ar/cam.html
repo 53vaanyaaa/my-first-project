@@ -21,6 +21,7 @@
   #load{top:45%;left:0;right:0;text-align:center;font-size:16px;display:none;text-shadow:0 1px 6px #000}
 </style>
 <script src="lib/aframe.min.js"></script>
+<script>window.FIB_HINTS = new URLSearchParams(location.search).get('a') === '1';</script>
 <script src="app.js"></script>
 <script src="groups.js"></script>
 </head>
@@ -43,7 +44,7 @@
   var THREE = AFRAME.THREE, M = window.FIBMODELS;
   var q = new URLSearchParams(location.search), cur = Math.max(0, Math.min(4, +(q.get('model') || 0)));
   var K = q.get('k'), G = window.FIBGROUPS, lock = !!(K && G.codes[K] != null);   // ссылка группы: только одна модель
-  if (lock) { cur = G.codes[K]; document.getElementById('bottom').style.display = 'none'; document.querySelector('#top a').href = 'view.html?k=' + K; }
+  if (lock) { cur = G.codes[K]; document.getElementById('bottom').style.display = 'none'; document.querySelector('#top a').href = 'view.html?k=' + K + (window.FIB_HINTS ? '&a=1' : ''); }
   var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)); renderer.setSize(innerWidth, innerHeight); renderer.setClearColor(0x000000, 0);
   document.body.appendChild(renderer.domElement);

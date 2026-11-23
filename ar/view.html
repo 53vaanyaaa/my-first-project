@@ -18,29 +18,31 @@
 <script src="groups.js"></script>
 </head>
 <body>
-<h1>📱 Твоя модель</h1>
-<p>Нажми на картинку и наведи камеру на стол. Рассмотри модель со всех сторон: что за узор ты видишь?</p>
+<h1 id="h">📱 Твоя модель</h1>
+<p>Нажми на картинку и наведи камеру на стол. Рассмотри модель со всех сторон.</p>
 <div id="warn"></div>
 <div class="card" id="card"><a class="main" id="lnk"><img id="img" alt="модель"><span class="btn">Показать на столе</span></a></div>
 <p id="bad">Ссылка неверная. Отсканируй QR-код группы ещё раз.</p>
 <script>
-  var K = new URLSearchParams(location.search).get('k'), G = window.FIBGROUPS, i = G.codes[K];
+  var P = new URLSearchParams(location.search), K = P.get('k'), G = window.FIBGROUPS, i = G.codes[K];
+  var A = P.get('a') === '1', dir = A ? 'answer/' : '', qa = A ? '&a=1' : '';   // a=1 — версия «разгадка» для учителя
   if (i == null) { document.getElementById('card').style.display = 'none'; document.getElementById('bad').style.display = 'block'; }
   else {
     var f = G.files[i], a = document.getElementById('lnk'), img = document.getElementById('img');
-    img.src = 'thumbs/' + f + '.jpg';
+    img.src = 'thumbs/' + dir + f + '.jpg';
     var ua = navigator.userAgent;
     var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var isAndroid = /Android/.test(ua);
     var inApp = /Instagram|FBAN|FBAV|Telegram|WhatsApp|Line\/|VKClient|; wv\)/.test(ua) || (isIOS && (!/Safari\//.test(ua) || /CriOS|FxiOS|EdgiOS/.test(ua)));
-    var camUrl = new URL('cam.html?k=' + K, location.href).href, viewer = new URL('index.html?mode=3d&k=' + K, location.href).href;
-    if (isIOS) { a.setAttribute('rel', 'ar'); a.href = 'models/' + f + '.usdz'; }             // Apple AR Quick Look
+    var camUrl = new URL('cam.html?k=' + K + qa, location.href).href, viewer = new URL('index.html?mode=3d&k=' + K + qa, location.href).href;
+    if (isIOS) { a.setAttribute('rel', 'ar'); a.href = 'models/' + dir + f + '.usdz'; }             // Apple AR Quick Look
     else if (isAndroid) {
       a.href = camUrl;                                                                          // AR через камеру — на любом Android
-      var glb = new URL('models/' + f + '.glb', location.href).href, g = document.createElement('a'); g.className = 'alt';
+      var glb = new URL('models/' + dir + f + '.glb', location.href).href, g = document.createElement('a'); g.className = 'alt';
       g.href = 'intent://arvr.google.com/scene-viewer/1.0?file=' + encodeURIComponent(glb) + '&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=' + encodeURIComponent(camUrl) + ';end;';
       g.textContent = '🔎 Точный AR от Google (если телефон поддерживает ARCore)'; document.getElementById('card').appendChild(g);
     } else a.href = viewer;                                                                     // компьютер — 3D
+    if (A) document.getElementById('h').textContent = '🔑 Разгадка';
     var w = document.getElementById('warn');
     if (inApp) { w.innerHTML = '⚠️ AR не работает внутри мессенджера. Нажми <b>⋯</b> → <b>«Открыть в ' + (isIOS ? 'Safari' : 'Chrome') + '»</b>.'; w.style.display = 'block'; }
   }

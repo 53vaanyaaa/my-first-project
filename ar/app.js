@@ -261,7 +261,7 @@
     for (let n = 0; n < N; n++) {
       const r = c * Math.sqrt(n + 0.5), a = n * GA, f = r / R;
       const x = r * Math.cos(a), z = r * Math.sin(a), y = 0.04 * (1 - f * f);   // выпуклая «корзинка»
-      const hi34 = n % 34 === 0, hi55 = n % 55 === 0, hi = hi34 || hi55;
+      const HINT = !!window.FIB_HINTS, hi34 = HINT && n % 34 === 0, hi55 = HINT && n % 55 === 0, hi = hi34 || hi55;   // подсветка спиралей — только в «разгадке»
       const s = (0.0095 + 0.0068 * f) * (hi ? 1.3 : 1);
       o.position.set(x, y + (hi ? 0.008 : 0), z);
       o.rotation.set(0, -a, 0);
@@ -352,7 +352,7 @@
       put(apo, n, V(0.1 * s, 0.24 * s, 0), V(0.3 * s, 0.6 * s, 0.8 * s));
       put(umbo, n, V(0.25 * s, 0.24 * s, 0), V(0.06 * s, 0.06 * s, 0.06 * s));
       col.set('#4a2a14').offsetHSL(0, 0, (rnd(n) - 0.5) * 0.05); body.setColorAt(n, col);
-      if (n % 8 === 0) col.set('#ff8a00'); else if (n % 13 === 0) col.set('#18d4ff');
+      if (window.FIB_HINTS && n % 8 === 0) col.set('#ff8a00'); else if (window.FIB_HINTS && n % 13 === 0) col.set('#18d4ff');
       else col.copy(wood1).lerp(wood2, rnd(n + 31) * 0.7);
       apo.setColorAt(n, col);
       col.set('#2b180b'); umbo.setColorAt(n, col);
@@ -477,7 +477,7 @@
       // числа на квадратах убраны — видна только золотая спираль
     }
     const maxH = rEnd * rho * hh * S;
-    const group = new THREE.Group(); group.add(shell); group.add(over);
+    const group = new THREE.Group(); group.add(shell); if (window.FIB_HINTS) group.add(over);
     let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
     for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }
     group.position.set(-((bx0 + bx1) / 2 - P[0]) * S, maxH + 0.005, ((by0 + by1) / 2 - P[1]) * S);
@@ -490,6 +490,7 @@
   // Плоский рисунок в плоскости XZ (y = 0). width — ширина по длинной стороне.
   // centerOnPole: true — центр спирали в начале координат; иначе — центр прямоугольника.
   function goldenOverlay(width, centerOnPole, show) {
+    if (!window.FIB_HINTS) return new THREE.Group();   // ученики видят модель без подсказок; рисунок — только в «разгадке»
     const SHOW = show || 7, lay = goldenLayout(14), P = lay.pole;
     let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
     for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }

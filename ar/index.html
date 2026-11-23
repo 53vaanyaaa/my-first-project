@@ -25,6 +25,7 @@
 </style>
 <script src="lib/aframe.min.js"></script>
 <script src="lib/aframe-ar.js"></script>
+<script>window.FIB_HINTS = new URLSearchParams(location.search).get('a') === '1';</script>
 <script src="app.js"></script>
 <script src="groups.js"></script>
 </head>
@@ -82,7 +83,7 @@
   if (K && G.codes[K] != null) {   // ссылка группы: одна модель, без переключателей
     q.set('model', G.codes[K]);
     ['tabs', 'info'].forEach(function (id) { document.getElementById(id).style.display = 'none'; });
-    document.querySelectorAll('#top .chip').forEach(function (c) { if (c.id !== 'bLab') c.style.display = 'none'; });
+    document.querySelectorAll('#top .chip').forEach(function (c) { c.style.display = 'none'; });
   }
   var m = q.get('model'); if (m != null) { var t = setInterval(function () { if (window.FIB) { window.FIB.show(+m); clearInterval(t); } }, 100); }
 })();
