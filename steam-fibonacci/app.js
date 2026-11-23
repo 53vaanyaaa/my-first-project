@@ -143,13 +143,6 @@
     for (let i = 0; i < 34; i++) petal(pA, (i / 34) * Math.PI * 2, R - 0.012, 0.0, i);
     for (let i = 0; i < 21; i++) petal(pB, ((i + 0.5) / 21) * Math.PI * 2, R - 0.02, -0.014, 200 + i);
 
-    // золотой угол: две линии от центра и дуга 137.5°
-    const Y = 0.055;
-    const arc = []; for (let i = 0; i <= 30; i++) { const a = GA * i / 30; arc.push(V(Math.cos(a) * 0.22, Y, Math.sin(a) * 0.22)); }
-    head.add(tube(arc, '#ffffff', 0.006, true));
-    head.add(seg(V(0, Y, 0), V(0.38, Y, 0), '#ffffff', 0.004, true));
-    head.add(seg(V(0, Y, 0), V(Math.cos(GA) * 0.38, Y, Math.sin(GA) * 0.38), '#ffffff', 0.004, true));
-
     // изогнутый стебель и два листа
     const stemPts = [V(0, 0, 0), V(0.012, 0.16, -0.008), V(-0.006, 0.33, -0.02), V(0, 0.46, -0.035)];
     root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stemPts), 24, 0.021, 10, false), pbr('#4f7d2a', 0.7)));
@@ -162,11 +155,7 @@
     const list = [];
     const lbl = (t, p, op) => { const s = makeLabel(t, op); s.position.copy(p); head.add(s); list.push(s); return s; };
     const hl = (n) => V(pos[n][0], 0.12, pos[n][1]);
-    lbl('137,5°', V(Math.cos(GA / 2) * 0.31, 0.12, Math.sin(GA / 2) * 0.31), { fs: 56, h: 0.06, border: '#ffffff' });
-    lbl('34', hl(34 * 17), { fs: 56, h: 0.06, border: '#ff3b30', color: '#ff8a80' });
-    lbl('55', hl(55 * 11), { fs: 56, h: 0.06, border: '#18d4ff', color: '#8be9ff' });
-    lbl('610 семян', V(0, 0.3, -0.47), { fs: 46, h: 0.05 });
-    const top = makeLabel('Подсолнух\n55 : 34 = 1,618 = φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
+    const top = makeLabel('Подсолнух\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 1.12, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
@@ -222,10 +211,7 @@
 
     const list = [];
     const lbl = (t, p, op) => { const s = makeLabel(t, op); s.position.copy(p); root.add(s); list.push(s); return s; };
-    lbl('8', marks.pa.clone().add(V(0.09, 0.05, 0)), { fs: 56, h: 0.06, border: '#ff8a00', color: '#ffc27a' });
-    lbl('13', marks.pb.clone().add(V(-0.1, 0.05, 0)), { fs: 56, h: 0.06, border: '#18d4ff', color: '#8be9ff' });
-    lbl('89 чешуек', V(0, 0.0, 0.36), { fs: 44, h: 0.05 });
-    lbl('Шишка\n13 : 8 = 1,625 ≈ φ', V(0, 1.12, 0), { fs: 48, h: 0.055 });
+    lbl('Шишка\nзолотое сечение φ', V(0, 1.12, 0), { fs: 48, h: 0.055 });
     root.userData.labelList = list;
     return root;
   }
@@ -345,24 +331,16 @@
     for (let k = 0; k < SHOW; k++) { const b = lay.sq[k]; bx0 = Math.min(bx0, b.x0); bx1 = Math.max(bx1, b.x1); by0 = Math.min(by0, b.y0); by1 = Math.max(by1, b.y1); }
     group.position.set(-((bx0 + bx1) / 2 - P[0]) * S, maxH + 0.005, ((by0 + by1) / 2 - P[1]) * S);
     root.add(group);
-    const top = makeLabel('Наутилус\nзолотая спираль φ', { fs: 48, h: 0.055 }); top.position.set(0, 0.98, 0); root.add(top); list.push(top);
+    const top = makeLabel('Наутилус\nзолотое сечение φ', { fs: 48, h: 0.055 }); top.position.set(0, 0.98, 0); root.add(top); list.push(top);
     root.userData.labelList = list;
     return root;
   }
 
   /* ---------- компонент сцены ---------- */
   const INFO = [
-    { icon: '🌻', name: 'Подсолнух', html:
-      '<b>Золотой угол 137,5°</b> — каждое новое семечко поворачивается на него (360° ÷ φ²). ' +
-      'Так семена укладываются без пустот и образуют спирали: <b style="color:#ff6b61">34</b> в одну сторону и <b style="color:#4fe0ff">55</b> в другую.<br>' +
-      '<b>34 и 55 — соседние числа Фибоначчи.</b> 55 ÷ 34 = 1,6176 ≈ φ = 1,618…' },
-    { icon: '🌲', name: 'Шишка', html:
-      'Чешуйки тоже повёрнуты на золотой угол. Видно две системы спиралей: <b style="color:#ffa63d">8</b> и <b style="color:#4fe0ff">13</b> — соседние числа Фибоначчи.<br>' +
-      '13 ÷ 8 = 1,625 ≈ φ. Всего 89 чешуек — тоже число Фибоначчи.' },
-    { icon: '🐚', name: 'Наутилус', html:
-      'Жёлтые квадраты со сторонами <b>1, 1, 2, 3, 5, 8, 13</b> (числа Фибоначчи) складываются в золотой прямоугольник. ' +
-      'Красная спираль через их углы растёт в φ раз за каждую четверть оборота.<br>' +
-      '13 ÷ 8 = 1,625 ≈ φ. <i>Настоящая раковина растёт чуть медленнее — это приближение.</i>' }
+    { icon: '🌻', name: 'Подсолнух', html: '' },
+    { icon: '🌲', name: 'Шишка', html: '' },
+    { icon: '🐚', name: 'Наутилус', html: '' }
   ];
 
   window.FIBMODELS = { builders: [buildSunflower, buildCone, buildNautilus], INFO: INFO };
@@ -394,7 +372,7 @@
       this.setLabels(this.labelsOn);
       document.querySelectorAll('.tab').forEach((b, k) => b.classList.toggle('on', k === i));
       const info = document.getElementById('info');
-      if (info) info.innerHTML = '<h2>' + INFO[i].icon + ' ' + INFO[i].name + '</h2><p>' + INFO[i].html + '</p>';
+      if (info) info.innerHTML = '<h2>' + INFO[i].icon + ' ' + INFO[i].name + '</h2>';
     },
     setLabels: function (on) {
       this.labelsOn = on;
